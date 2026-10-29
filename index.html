@@ -15,6 +15,7 @@
     <span class="t">Jouw ploeg</span><span class="mijn" id="s0">0</span><span>–</span><span class="ander" id="s1">0</span><span class="t">Andere ploeg</span>
   </div>
   <span class="chip" id="roleChip">Jij: lopers</span>
+  <span class="chip" id="bellChip" hidden>Bel <b>15:00</b></span>
   <span class="chip" id="clockChip">Blok <b>10:00</b></span>
   <span class="chip" id="cdChip">B is veilig</span>
   <span class="spacer"></span>
@@ -25,10 +26,11 @@
     <div class="seg" role="group" aria-label="Spelsnelheid">
       <button data-speed="0.5">0,5×</button><button data-speed="1" aria-pressed="true">1×</button><button data-speed="2">2×</button><button data-speed="4">4×</button>
     </div>
+    <button id="msgBtn">Berichten</button>
     <button id="statsBtn">Statistieken</button>
     <button id="soundBtn" aria-pressed="true">Geluid</button>
     <button id="keysBtn">Toetsen <kbd>K</kbd></button>
-    <button id="newBtn">Nieuw spel</button>
+    <button id="newBtn">Menu</button>
   </div>
 </header>
 
@@ -36,7 +38,9 @@
   <div class="col">
   <div class="stage" id="stage">
     <canvas id="veld" aria-label="Speelplaats van bovenaf"></canvas>
-    <div class="toasts" id="toasts"></div>
+    <div class="stagetl"><div class="tut" id="tutBox" hidden></div><div class="toasts" id="toasts"></div></div>
+    <div class="feed" id="feed" aria-live="polite"></div>
+    <div class="msgs" id="msgBox" hidden></div>
     <div class="cmdhint" id="cmdHint" hidden></div>
     <button class="tik" id="tikBtn" hidden>Tik</button>
   </div>
@@ -58,6 +62,7 @@
       <button id="mPos">Overnemen</button>
       <button id="mCam" aria-pressed="true">Camera volgt</button>
       <button id="mSound" aria-pressed="true">Geluid</button>
+      <button id="mMsg">Berichten</button>
     </div>
   </div>
   </div>
@@ -99,6 +104,12 @@
 
     <section class="box" data-tab="form">
       <h2>Formaties <small id="formFor">lopers</small></h2>
+      <div class="hint">Tekenen op het veld: kies een vorm en sleep over het veld. Werkt met je selectie, of met de hele ploeg als niemand gekozen is.</div>
+      <div class="draws">
+        <button data-draw="line">Lijn <kbd>L</kbd></button>
+        <button data-draw="arc">Boog <kbd>J</kbd></button>
+        <button data-draw="arrow">Pijl <kbd>U</kbd></button>
+      </div>
       <div class="btns" id="formP">
         <label class="field" style="grid-column:1/-1">Afstand van de muur tot C (m), ook voor de rollen muur en boogman
           <input type="number" id="wallDist" min="1" max="25" step="0.5" value="3"></label>
@@ -148,38 +159,75 @@
   </aside>
 </main>
 
-<div class="ov" id="startOv">
-  <div class="card">
-    <h1>Pakker <span>En</span> Loper</h1>
-    <p>Lopers starten in het kot B en moeten met één loper over lijn C geraken. Pakkers tikken. Na 10 seconden aftellen is B niet meer veilig. Hoogstens twee pakkers binnen 3 meter van B. Alle lopers getikt: punt voor de pakkers en wisselen. Elke ronde begint met opstellen: de ronde start pas als beide ploegen klaar zijn.</p>
-    <div class="opt">
-      <span class="lbl">Spel</span>
-      <div class="seg" role="group" aria-label="Spel"><button data-set="net" data-v="off" aria-pressed="true">Tegen de computer</button><button data-set="net" data-v="host">Online: host</button><button data-set="net" data-v="join">Online: meedoen</button><button data-set="net" data-v="watch">Computer tegen computer</button></div>
+<div class="ov menu" id="startOv">
+  <div class="card menucard">
+    <div class="mleft">
+      <div class="mtitle">Pakker <span>En</span> Loper</div>
+      <p class="mtag">Het speeltijdspel, als strategiespel. Lopers moeten met één loper over lijn C, pakkers tikken.</p>
+      <div class="modes" role="group" aria-label="Spel">
+        <button class="mode" data-set="net" data-v="off" aria-pressed="true"><b>Solo</b><span>Tegen de computer, met pauze</span></button>
+        <button class="mode" data-set="net" data-v="host"><b>Online: host</b><span>Maak een spel en stuur je vriend de code</span></button>
+        <button class="mode" data-set="net" data-v="join"><b>Online: meedoen</b><span>Doe mee met de code van je vriend</span></button>
+        <button class="mode" data-set="net" data-v="watch"><b>Kijken</b><span>Computer tegen computer</span></button>
+        <button class="mode" data-set="net" data-v="learn"><b>Oefenen</b><span>Leer het spel stap voor stap</span></button>
+      </div>
+    </div>
+    <div class="mright">
       <span class="d" id="netD">Jij tegen de computer, met pauze.</span>
+      <div class="opt" id="joinOpt" hidden>
+        <label class="lbl" for="joinCode">Code van je vriend</label>
+        <input id="joinCode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" style="font-family:var(--f-mono);font-size:22px;letter-spacing:.3em;text-transform:uppercase;max-width:9em">
+      </div>
+      <div class="hostopts" id="hostOpts">
+        <div class="opt">
+          <span class="lbl">Besturing</span>
+          <div class="seg" role="group" aria-label="Besturing"><button data-set="mode" data-v="dyn" aria-pressed="true">Dynamisch</button><button data-set="mode" data-v="rol">Rollen</button></div>
+          <span class="d" id="modeD">Geen rollen. Kinderen doen alleen wat je beveelt, plus ontwijken en tikken op korte afstand.</span>
+        </div>
+        <div class="opt">
+          <span class="lbl">Realisme</span>
+          <div class="seg" role="group" aria-label="Realisme"><button data-set="realism" data-v="0" aria-pressed="true">Uit</button><button data-set="realism" data-v="1">Aan</button></div>
+          <span class="d" id="realD">Jouw kinderen voeren alles perfect uit.</span>
+        </div>
+        <div class="opt">
+          <span class="lbl">Jouw ploeg begint als</span>
+          <div class="seg" role="group" aria-label="Startrol"><button data-set="start" data-v="lopers" aria-pressed="true">Lopers</button><button data-set="start" data-v="pakkers">Pakkers</button></div>
+        </div>
+      </div>
+      <div class="gameopts" id="gameOpts">
+        <div class="opt">
+          <label class="lbl" for="kidCount">Aantal kinderen: <b id="kidCountV">25</b></label>
+          <input type="range" id="kidCount" min="6" max="30" step="1" value="25">
+          <span class="d" id="kidCountD">13 tegen 12</span>
+        </div>
+        <div class="opt">
+          <span class="lbl">Speeltijd</span>
+          <div class="seg" role="group" aria-label="Speeltijd"><button data-set="bell" data-v="15" aria-pressed="true">15 min</button><button data-set="bell" data-v="30">30 min</button><button data-set="bell" data-v="0">Geen bel</button></div>
+          <span class="d" id="bellD">Bij de bel wint de ploeg met de meeste punten.</span>
+        </div>
+      </div>
+      <p class="neterr" id="netErr" hidden></p>
+      <button class="go" id="startBtn">Naar de speelplaats</button>
     </div>
-    <div class="opt" id="joinOpt" hidden>
-      <label class="lbl" for="joinCode">Code van je vriend</label>
-      <input id="joinCode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" style="font-family:var(--f-mono);font-size:22px;letter-spacing:.3em;text-transform:uppercase;max-width:9em">
+  </div>
+</div>
+
+<div class="ov" id="endOv" hidden>
+  <div class="card endcard">
+    <div class="ebell">De bel!</div>
+    <h3 id="endTitle"></h3>
+    <div class="escore"><span class="mijn" id="endS0">0</span><span>–</span><span class="ander" id="endS1">0</span></div>
+    <div class="egrid">
+      <div><div class="lbl">Uitblinkers</div><ul class="rep" id="endMvp"></ul></div>
+      <div><div class="lbl">Waar het gebeurde</div><canvas id="endMap" width="350" height="250"></canvas>
+        <div class="hint">Ster: een loper over C. Stip: een tik. Kleur: de ploeg die het deed.</div></div>
     </div>
-    <div class="hostopts" id="hostOpts">
-    <div class="opt">
-      <span class="lbl">Besturing</span>
-      <div class="seg" role="group" aria-label="Besturing"><button data-set="mode" data-v="dyn" aria-pressed="true">Dynamisch</button><button data-set="mode" data-v="rol">Rollen</button></div>
-      <span class="d" id="modeD">Geen rollen. Kinderen doen alleen wat je beveelt, plus ontwijken en tikken op korte afstand.</span>
+    <div class="row" id="endBtns">
+      <button class="go" id="endRematch">Revanche, zelfde klas</button>
+      <button id="endNew">Nieuwe klas</button>
+      <button id="endMenu">Menu</button>
     </div>
-    <div class="opt">
-      <span class="lbl">Realisme</span>
-      <div class="seg" role="group" aria-label="Realisme"><button data-set="realism" data-v="0" aria-pressed="true">Uit</button><button data-set="realism" data-v="1">Aan</button></div>
-      <span class="d" id="realD">Jouw kinderen voeren alles perfect uit.</span>
-    </div>
-    <div class="opt">
-      <span class="lbl">Jouw ploeg begint als</span>
-      <div class="seg" role="group" aria-label="Startrol"><button data-set="start" data-v="lopers" aria-pressed="true">Lopers</button><button data-set="start" data-v="pakkers">Pakkers</button></div>
-    </div>
-    <p>Een klas van 25 kinderen uit het 6de leerjaar wordt elk spel opnieuw gerold: 13 tegen 12.</p>
-    </div>
-    <p class="neterr" id="netErr" hidden></p>
-    <button class="go" id="startBtn">Naar de speelplaats</button>
+    <p class="hint" id="endWait" hidden>Wachten op de host: die kiest revanche of een nieuwe klas.</p>
   </div>
 </div>
 
@@ -240,6 +288,7 @@
       <dt><kbd>Enter</kbd></dt><dd>Klaar: jouw ploeg staat opgesteld. De ronde start als beide ploegen klaar zijn.</dd>
       <dt><kbd>T</kbd></dt><dd>Aftellen starten (als jouw ploeg pakt).</dd>
       <dt><kbd>Esc</kbd></dt><dd>Bevel annuleren, selectie wissen.</dd>
+      <dt><kbd>L</kbd> <kbd>J</kbd> <kbd>U</kbd></dt><dd>Tactiekbord: lijn, boog of pijl tekenen door over het veld te slepen.</dd>
       <dt><kbd>O</kbd></dt><dd>Gekozen kind overnemen (in pauze of tijdens het opstellen) of loslaten.</dd>
       <dt>Overgenomen</dt><dd><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> of pijltjes: lopen (sprinten). <kbd>Shift</kbd> ingedrukt: joggen. <kbd>Spatie</kbd>: tikken. <kbd>P</kbd> of <kbd>Esc</kbd>: pauze. <kbd>O</kbd>: loslaten. De muis blijft voor je andere kinderen.</dd>
     </dl>
@@ -260,7 +309,8 @@
 <script src="js/10-unit-possession.js"></script>
 <script src="js/11-statistieken.js"></script>
 <script src="js/12-online.js"></script>
-<script src="js/13-mobiel.js"></script>
-<script src="js/14-lus.js"></script>
+<script src="js/13-oefenen.js"></script>
+<script src="js/14-mobiel.js"></script>
+<script src="js/15-lus.js"></script>
 </body>
 </html>

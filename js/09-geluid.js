@@ -22,7 +22,9 @@ const SFX=(()=>{
     miss(){noise(.12,.035,3500);},
     help(){tone(990,.07,'sine',.08);tone(990,.07,'sine',.08,.11);},
     point(mine){const seq=mine?[523,659,784]:[392,330,262];seq.forEach((f,i)=>tone(f,.18,'triangle',.12,i*.12));},
-    ready(){tone(660,.07,'sine',.08);}
+    ready(){tone(660,.07,'sine',.08);},
+    bell(){for(let i=0;i<22;i++)tone(i%2?1180:1320,.07,'square',.045,i*.075);},
+    chat(){tone(880,.06,'sine',.08);tone(1175,.08,'sine',.08,.07);}
   };
 })();
 ['pointerdown','keydown'].forEach(ev=>window.addEventListener(ev,()=>SFX.unlock(),{once:true,capture:true}));

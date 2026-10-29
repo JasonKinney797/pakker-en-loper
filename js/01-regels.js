@@ -40,7 +40,7 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','
 
 /* ---------- Toestand ---------- */
 const S={
-  set:{mode:'dyn',realism:false,start:'lopers'},
+  set:{mode:'dyn',realism:false,start:'lopers',count:25,bell:15},
   kids:[],byId:new Map(),time:0,rt:0,role:['lopers','pakkers'],score:[0,0],block:600,
   tb:null,cd:null,cdDone:false,paused:true,speed:1,over:true,round:0,
   hists:[{lScoresY:[],boogSeen:[]},{lScoresY:[],boogSeen:[]}],plans:[null,null],auto0:false,ev:null,
@@ -79,18 +79,27 @@ function rollKid(id,name,team){
 }
 
 /* ---------- Spel opzetten ---------- */
-function newGame(){
-  const names=shuffle(NAMES.slice()).slice(0,25);
-  const big=rand()<.5?0:1;               // welke ploeg heeft er 13
-  S.kids=[];S.byId.clear();
-  names.forEach((n,i)=>{const team=i<13?big:1-big;const k=rollKid(i,n,team);S.kids.push(k);S.byId.set(i,k);});
+function newGame(keep){
+  const N=clamp(Math.round(S.set.count||25),6,30),nb=Math.ceil(N/2);
+  if(keep&&S.kids.length){   // revanche: dezelfde klas, alles terug op nul
+    for(const k of S.kids){k.st={tags:0,got:0,cross:0,miss:0,rounds:0};k.ctrl='cpu';k.mem.clear();}
+  }else{
+    const names=shuffle(NAMES.slice()).slice(0,N);
+    const big=rand()<.5?0:1;               // welke ploeg er één meer heeft
+    S.kids=[];S.byId.clear();
+    names.forEach((n,i)=>{const team=i<nb?big:1-big;const k=rollKid(i,n,team);
+      if(S.tut&&team===1)k.level='dom';
+      S.kids.push(k);S.byId.set(i,k);});
+  }
+  S.bell=S.set.bell?S.set.bell*60:0;S.ended=false;S.marks=[];S.bellWarn=0;
   S.role=[S.set.start,S.set.start==='lopers'?'pakkers':'lopers'];
   S.score=[0,0];S.block=600;S.round=0;S.tb=null;S.learn=[newLearn(),newLearn()];S.hists=[{lScoresY:[],boogSeen:[]},{lScoresY:[],boogSeen:[]}];
   if(S.pos)release(null);if(S.rpos)remoteRelease(null);S.sel.clear();S.groups={};S.time=0;
   logClear();
   applyDefaultRoles();
   const n0=S.kids.filter(k=>k.team===0).length,n1=S.kids.filter(k=>k.team===1).length;
-  say(`Nieuwe klas gerold. Jouw ploeg telt <b>${n0}</b> kinderen, de andere <b>${n1}</b>.`,`Nieuwe klas gerold. Jouw ploeg telt <b>${n1}</b> kinderen, de andere <b>${n0}</b>.`);
+  const nk=keep?'Revanche met dezelfde klas':'Nieuwe klas gerold';
+  say(`${nk}. Jouw ploeg telt <b>${n0}</b> kinderen, de andere <b>${n1}</b>.${S.bell?` Speeltijd: ${S.set.bell} minuten.`:''}`,`${nk}. Jouw ploeg telt <b>${n1}</b> kinderen, de andere <b>${n0}</b>.${S.bell?` Speeltijd: ${S.set.bell} minuten.`:''}`);
   startRound();
   S.paused=false;
   buildRoster();syncUI();

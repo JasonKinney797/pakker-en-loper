@@ -15,6 +15,10 @@ function openStats(){
 }
 function closeStats(){document.getElementById('statsOv').hidden=true;if(S._statsPaused&&!S.over)S.paused=false;S._statsPaused=false;syncUI();}
 document.getElementById('statsBtn').addEventListener('click',openStats);
+{const mb=document.getElementById('msgBox');mb.innerHTML=CHAT.map((t,i)=>`<button data-chat="${i}">${t}</button>`).join('');
+  mb.addEventListener('click',e=>{const b=e.target.closest('[data-chat]');if(b)chatSend(+b.dataset.chat);});
+  const tog=()=>{mb.hidden=!mb.hidden;};
+  document.getElementById('msgBtn').addEventListener('click',tog);document.getElementById('mMsg').addEventListener('click',tog);}
 document.getElementById('statsBtn2').addEventListener('click',()=>{if(typeof closeSheet==='function'&&document.getElementById('panel').classList.contains('open'))closeSheet(false);openStats();});
 document.getElementById('statsClose').addEventListener('click',closeStats);
 function toggleSound(){SFX.set(!SFX.on);syncUI();}

@@ -6,6 +6,17 @@ Het speeltijdspel als RTS in de browser. Geen installatie nodig.
 Open de map in VS Code en dubbelklik `index.html`, of open het in je browser.
 Met de VS Code-extensie Live Server herlaadt het spel vanzelf als je iets bewaart.
 
+## Spelen
+Kies in het menu:
+- **Solo**: tegen de computer, met pauze.
+- **Online: host** of **Online: meedoen**: tegen een vriend (zie hieronder).
+- **Kijken**: computer tegen computer.
+- **Oefenen**: een rondleiding voor nieuwe spelers.
+
+Je kiest ook het aantal kinderen (6 tot 30) en de speeltijd (15 of 30 minuten, of geen bel). Bij de bel wint de ploeg met de meeste punten; de lopende ronde telt dan niet mee.
+
+Tactiekbord: kies bij Formaties een lijn, boog of pijl (of druk L, J of U) en sleep over het veld.
+
 ## Online tegen een vriend
 1. Open het spel via je GitHub Pages-link (online werkt niet als je `index.html` gewoon van je schijf opent, en ook niet in Claude).
 2. Kies **Online: host**, stel het spel in en klik op **Spel aanmaken**. Je krijgt een code van 4 letters en een link.
@@ -29,7 +40,8 @@ De verbinding loopt rechtstreeks tussen jullie browsers (WebRTC via PeerJS). Op 
 - `js/10-unit-possession.js`: zelf een kind besturen
 - `js/11-statistieken.js`: statistieken per kind
 - `js/12-online.js`: online spelen tegen een vriend (PeerJS)
-- `js/13-mobiel.js`: knoppen en lade op gsm en tablet
-- `js/14-lus.js`: de lus die alles 60 keer per seconde laat lopen
+- `js/13-oefenen.js`: de rondleiding voor nieuwe spelers
+- `js/14-mobiel.js`: knoppen en lade op gsm en tablet
+- `js/15-lus.js`: de lus die alles 60 keer per seconde laat lopen
 
 De bestanden worden in deze volgorde geladen. Ze delen hun variabelen, dus de volgorde in `index.html` niet veranderen.

@@ -4,6 +4,7 @@ const FIX=1/60;let acc=0,last=performance.now(),uiT=0;
 function frame(now){
   const dt=Math.min(.1,(now-last)/1000);last=now;
   try{netFrame(dt);}catch(e){console.error(e);}
+  try{tutTick();}catch(e){}
   if(isHost())S.paused=false;
   if(S.watch&&!S.paused){
     if(S.over&&S.nextIn>0){S.nextIn-=dt*S.speed;if(S.nextIn<=0){S.nextIn=0;nextRound();}}

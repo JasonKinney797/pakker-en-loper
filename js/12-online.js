@@ -27,7 +27,7 @@ function setOnline(on){document.body.classList.toggle('online',on);if(on){S.spee
 
 /* ---- host ---- */
 function startHost(){
-  setWatch(false);NET.mode='host';NET.guestGone=true;NET.joined=false;setOnline(true);
+  setWatch(false);S.tut=null;tutRender();NET.mode='host';NET.guestGone=true;NET.joined=false;setOnline(true);
   document.getElementById('startOv').hidden=true;document.getElementById('lobbyOv').hidden=false;
   const st=document.getElementById('lobbyState');
   const show=code=>{NET.code=code;document.getElementById('lobbyCode').textContent=code;
@@ -81,6 +81,7 @@ function sendInit(){
   netSend({t:'init',set:{mode:S.set.mode,realism:S.set.realism},
     kids:S.kids.map(k=>({id:k.id,name:k.name,team:k.team^1,top:k.top,acc:k.acc,agi:k.agi,stam:k.stam,react:k.react,reach:k.reach,level:k.level}))});
   sendStats();sendSnap();
+  netSend({t:'set',bell:S.set.bell});
 }
 function sendStats(){if(!isHost())return;netSend({t:'st',st:S.kids.map(k=>[k.id,k.st.tags,k.st.got,k.st.cross,k.st.miss,k.st.rounds])});}
 const r2=v=>Math.round(v*100)/100;
@@ -95,7 +96,7 @@ function sendSnap(){
   const own=S.kids.filter(k=>k.team===1).map(k=>({id:k.id,o:k.orders,r:k.role,r2:k.role2,c:k.cond,cv:k.condVal,sw:k.switched}));
   netSend({t:'s',sc:[S.score[1],S.score[0]],role:[S.role[1],S.role[0]],blk:r2(S.block),tb:S.tb?r2(S.tb.clock):null,
     cd:S.cd&&!S.cdDone?r2(S.cd.left):null,cdDone:S.cdDone,setup:!!S.setup,setupT:r2(S.setupT||0),ready:S.ready?[S.ready[1],S.ready[0]]:[false,false],
-    over:S.over,round:S.round,rt:r2(S.rt),pos:S.rpos?S.rpos.id:null,st:sts.join(''),k:ks,own});
+    over:S.over,round:S.round,rt:r2(S.rt),bell:r2(S.bell||0),ended:!!S.ended,pos:S.rpos?S.rpos.id:null,st:sts.join(''),k:ks,own});
 }
 /* het kind van de gast bewegen met zijn joystick */
 function applyRemote(){
@@ -137,6 +138,7 @@ function hostHandle(m){
     case 'tbpick':if(S.tbp&&Array.isArray(m.ids)){const ok=m.ids.filter(id=>{const k=S.byId.get(id);return k&&k.team===1;});
       if(ok.length===S.tbp.n[1])S.tbp.picks[1]=ok;}break;
     case 'bye':guestLeft();break;
+    case 'msg':chatShow(m.i,false);break;
   }
 }
 
@@ -200,7 +202,8 @@ function guestSnap(m){
   const wasSetup=S.setup;
   S.score=m.sc;S.role=m.role;S.block=m.blk;S.tb=m.tb!=null?{clock:m.tb}:null;
   S.cd=m.cd!=null?{left:m.cd}:(m.cdDone?{left:0}:null);S.cdDone=m.cdDone;S.setup=m.setup;S.setupT=m.setupT;S.ready=m.ready;
-  S.over=m.over;S.round=m.round;S.rt=m.rt;
+  S.over=m.over;S.round=m.round;S.rt=m.rt;S.bell=m.bell;S.ended=m.ended;
+  if(!m.ended&&!document.getElementById('endOv').hidden)document.getElementById('endOv').hidden=true;
   for(let i=0;i<S.kids.length;i++){const k=S.kids[i];const s=ST[m.st[i]]||'active';
     if(k.status!==s&&s!=='active'&&k.team===0)S.sel.delete(k.id);k.status=s;}
   S.vis0=new Set();
@@ -251,6 +254,9 @@ function guestHandle(m){
     case 'ping':S.pings.push({x:m.x,y:m.y,t:S.time,team:0});break;
     case 'buzz':buzz(m.p);break;
     case 'tb':openPicker(0,m.n,performance.now()+m.ms,ids=>netSend({t:'tbpick',ids}));break;
+    case 'end':renderEnd(m.d,false);break;
+    case 'feed':feedShow(m.x,m.c);break;
+    case 'msg':chatShow(m.i,false);break;
     case 'tbclose':document.getElementById('tbOv').hidden=true;S.pickUntil=0;break;
     case 'full':netErr('Dit spel heeft al een tweede speler.');netLeave();break;
     case 'bye':hostLost();break;

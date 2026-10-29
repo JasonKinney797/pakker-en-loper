@@ -43,9 +43,9 @@ kbd{font-family:var(--f-mono);font-size:11px;background:var(--asfalt);border:1px
 .layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px}
 .stage{position:relative;min-width:0;min-height:0;border-radius:10px;overflow:hidden;background:var(--asfalt-2)}
 #veld{display:block;width:100%;height:100%;cursor:crosshair}
-.toasts{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.toasts{display:flex;flex-direction:column;gap:6px;pointer-events:none}
 .toast{background:var(--paneel);border:1px solid var(--geel);color:var(--geel);border-radius:8px;padding:6px 10px;font-size:13px;max-width:280px}
-.cmdhint{position:absolute;right:10px;top:10px;background:var(--paneel);border:1px solid var(--rand);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--krijt-dim)}
+.cmdhint{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;background:var(--paneel);border:1px solid var(--geel);border-radius:8px;padding:6px 10px;font-size:12.5px;color:var(--krijt);max-width:90%;text-align:center}
 
 .panel{min-width:0;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:2px}
 .box{background:var(--paneel);border:1px solid var(--rand);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
@@ -117,6 +117,46 @@ kbd{font-family:var(--f-mono);font-size:11px;background:var(--asfalt);border:1px
 .mrow .grp{flex:1 1 0;min-width:0;font-family:var(--f-mono);font-weight:700}
 .mrow .grp.has{border-color:var(--mijn);color:var(--mijn)}
 .tabs{display:none}
+@media (max-width:1560px){.ctrls kbd{display:none}.ctrls button{padding:6px 8px}}
+/* hoofdmenu */
+.menucard{max-width:900px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px 30px;align-items:start}
+.mleft,.mright{display:flex;flex-direction:column;gap:12px;min-width:0}
+.mtitle{font-family:var(--f-disp);font-size:clamp(38px,6vw,58px);line-height:.95;text-wrap:balance}
+.mtitle span{color:var(--geel)}
+.mtag{margin:0;color:var(--krijt-dim);line-height:1.45}
+.modes{display:flex;flex-direction:column;gap:7px}
+.mode{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:11px 14px;border-radius:10px}
+.mode b{font-family:var(--f-disp);font-weight:400;font-size:19px}
+.mode span{font-size:12.5px;color:var(--krijt-dim)}
+.mode[aria-pressed="true"]{background:var(--geel);border-color:var(--geel);color:#2a2410}
+.mode[aria-pressed="true"] span{color:#5a4d1e}
+.gameopts,.hostopts{display:flex;flex-direction:column;gap:12px}
+input[type=range]{width:100%;accent-color:var(--geel)}
+@media (max-width:760px){.menucard{grid-template-columns:minmax(0,1fr);gap:14px}.mtitle{font-size:40px}.modes{display:grid;grid-template-columns:1fr 1fr}.mode:last-child{grid-column:1/-1}}
+/* eindscherm */
+.endcard{max-width:700px;text-align:left}
+.ebell{font-family:var(--f-disp);font-size:46px;color:var(--geel);line-height:1}
+.escore{font-family:var(--f-disp);font-size:42px;display:flex;gap:12px;align-items:baseline}
+.escore .mijn{color:var(--mijn)} .escore .ander{color:var(--ander)}
+.egrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.egrid .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--krijt-dim);margin-bottom:6px}
+#endMap{width:100%;max-width:350px;height:auto;border-radius:8px;background:var(--asfalt)}
+@media (max-width:640px){.egrid{grid-template-columns:minmax(0,1fr)}}
+/* meldingen op het veld */
+.feed{position:absolute;left:50%;transform:translateX(-50%);top:54px;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;max-width:90%}
+.feed div{background:rgba(31,36,39,.85);border-radius:999px;padding:4px 12px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;transition:opacity .4s}
+.feed .m0{color:var(--mijn)} .feed .m1{color:var(--ander)} .feed .mg{color:var(--geel)}
+.feed .chat{border:1px solid var(--geel);font-weight:700}
+/* oefenen */
+.stagetl{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;gap:6px;max-width:min(330px,80%);pointer-events:none}
+.stagetl .toasts{position:static}
+.tut{pointer-events:auto;background:var(--paneel);border:1px solid var(--geel);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.4}
+.tut b{color:var(--geel);font-family:var(--f-disp);font-weight:400;font-size:16px}
+.tut .row{gap:6px}
+/* tactiekbord en berichten */
+.draws{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.msgs{position:absolute;right:10px;bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--paneel);border:1px solid var(--rand);border-radius:10px;padding:8px;z-index:5}
+body:not(.online) #msgBtn,body:not(.online) #mMsg{display:none!important}
 .code{font-family:var(--f-mono);font-size:44px;font-weight:700;letter-spacing:.25em;color:var(--geel)}
 .neterr{color:var(--rood)!important}
 body.online #pauseBtn,body.online [aria-label="Spelsnelheid"],body.online #mPause,body.online #mSpeed,body.online #keysBtn{display:none!important}

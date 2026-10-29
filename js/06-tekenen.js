@@ -120,6 +120,15 @@ function draw(){
   S.floats=S.floats.filter(f=>S.time-f.t<1.3);
   // aftellen
   if(S.cd&&!S.cdDone){ctx.fillStyle='rgba(242,201,76,.9)';ctx.font=`${3*SC}px ${css.getPropertyValue('--f-disp')}`;T(Math.ceil(S.cd.left),wx(12),wy(3));}
+  // tactiekbord: voorbeeld
+  if(drawing){const d=drawing,ks=drawKids();ctx.strokeStyle='rgba(242,201,76,.9)';ctx.fillStyle='rgba(242,201,76,.9)';ctx.lineWidth=2;ctx.setLineDash([6,5]);
+    if(d.tool==='arrow'){ctx.beginPath();ctx.moveTo(wx(d.a.x),wy(d.a.y));ctx.lineTo(wx(d.b.x),wy(d.b.y));ctx.stroke();ctx.setLineDash([]);
+      const an=Math.atan2(wy(d.b.y)-wy(d.a.y),wx(d.b.x)-wx(d.a.x)),L=Math.max(10,.6*SC);ctx.beginPath();ctx.moveTo(wx(d.b.x),wy(d.b.y));
+      ctx.lineTo(wx(d.b.x)-Math.cos(an-.45)*L,wy(d.b.y)-Math.sin(an-.45)*L);ctx.lineTo(wx(d.b.x)-Math.cos(an+.45)*L,wy(d.b.y)-Math.sin(an+.45)*L);ctx.closePath();ctx.fill();}
+    else{const pts=drawSlots(d,Math.max(2,ks.length)),curve=d.tool==='arc'?arcPts(d.a,d.b,24):[d.a,d.b];
+      ctx.beginPath();curve.forEach((p,i)=>i?ctx.lineTo(wx(p.x),wy(p.y)):ctx.moveTo(wx(p.x),wy(p.y)));ctx.stroke();ctx.setLineDash([]);
+      for(const p of drawSlots(d,ks.length)){ctx.beginPath();ctx.arc(wx(p.x),wy(p.y),Math.max(4,.25*SC),0,7);ctx.fill();}}
+    ctx.setLineDash([]);}
   // vanaf hier: schermruimte
   ctx.setTransform(DPR,0,0,DPR,0,0);
   if(joy){ctx.strokeStyle='rgba(238,236,226,.45)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(joy.ox,joy.oy,JOY_R,0,7);ctx.stroke();

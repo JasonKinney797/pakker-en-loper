@@ -113,7 +113,8 @@ function tagsAndEnd(){
     if(S.pos&&S.pos.id===l.id){buzz([40,40,40]);release(`<b>${l.name}</b> is getikt. Je laat los en stuurt de rest weer van bovenaf.`);}
     if(S.rpos&&S.rpos.id===l.id){netSend({t:'buzz',p:[40,40,40]});remoteRelease(`<b>${l.name}</b> is getikt. Je laat los en stuurt de rest weer van bovenaf.`);}
     S.ev.tags.push({p:p.name,l:l.name,y:l.y,t:S.rt,pt:p.team});
-    p.st.tags++;l.st.got++;sfx('tag',p.team);
+    p.st.tags++;l.st.got++;sfx('tag',p.team);S.marks.push([+l.x.toFixed(1),+l.y.toFixed(1),p.team,'t']);
+    feedAll(`${p.name} tikt ${l.name}`,p.team);
     fx(l,'getikt');
     if(l.team===0)S.sel.delete(l.id);
   }
@@ -132,7 +133,8 @@ function endRound(winner,crosser){
   const L=lt(),P=1-L,wt=winner==='lopers'?L:P;
   S.score[wt]++;
   const wasTb=!!S.tb;S.tb=null;
-  if(winner==='lopers'){S.ev.cross={name:crosser.name,y:crosser.y,team:L};crosser.st.cross++;if(isAI(P))S.hists[P].lScoresY.push(crosser.y);}
+  if(winner==='lopers'){S.ev.cross={name:crosser.name,y:crosser.y,team:L};crosser.st.cross++;S.marks.push([35,+crosser.y.toFixed(1),L,'c']);
+    feedAll(`${crosser.name} is over C!`,L);if(isAI(P))S.hists[P].lScoresY.push(crosser.y);}
   if(isAI(L))recordBoog(L);
   learnRound(winner);
   S.pendingSwap=winner==='pakkers';
@@ -158,6 +160,12 @@ function cpuReady(T){
 function playerReady(){if(!S.setup||S.ready[0]||S.over)return;if(isGuest()){netSend({t:'ready'});return;}S.ready[0]=true;say('Jouw ploeg is <b>klaar</b>.','De andere ploeg is <b>klaar</b>.');syncUI();}
 function step(dt){
   if(S.over)return;
+  if(S.bell>0){
+    const before=S.bell;S.bell-=dt;
+    if(before>60&&S.bell<=60){feedAll('Nog 1 minuut tot de bel.','mg');}
+    if(Math.ceil(before)!==Math.ceil(S.bell)&&S.bell<=10&&S.bell>0){feedAll(`Bel over ${Math.ceil(S.bell)}`,'mg');sfx('beep',false);}
+    if(S.bell<=0){S.bell=0;return ringBell();}
+  }
   applyPossession();applyRemote();
   S.time+=dt;
   if(S.setup){
@@ -178,7 +186,7 @@ function step(dt){
   S.rt+=dt;
   if(S.tb){S.tb.clock-=dt;if(S.tb.clock<=0)return tbTimeout();}
   else{S.block-=dt;if(S.block<=0)return blockTimeout();}
-  if(S.cd&&!S.cdDone){const pc=Math.ceil(S.cd.left);S.cd.left-=dt;const nc=Math.ceil(S.cd.left);if(nc!==pc&&nc>0)sfx('beep',false);if(S.cd.left<=0)sfx('beep',true);if(S.cd.left<=0){S.cdDone=true;say('Aftellen klaar: <b>B is niet meer veilig</b>.');}}
+  if(S.cd&&!S.cdDone){const pc=Math.ceil(S.cd.left);S.cd.left-=dt;const nc=Math.ceil(S.cd.left);if(nc!==pc&&nc>0)sfx('beep',false);if(S.cd.left<=0)sfx('beep',true);if(S.cd.left<=0){S.cdDone=true;feedAll('B is niet meer veilig','mg');say('Aftellen klaar: <b>B is niet meer veilig</b>.');}}
   S.percT-=dt;if(S.percT<=0){S.percT=.1;perceive();}
   S.capT-=dt;if(S.capT<=0){S.capT=.1;captain();observe();}
   for(const k of S.kids){k.thinkT-=dt;if(k.thinkT<=0){k.thinkT+=.1;think(k);}}
@@ -187,6 +195,67 @@ function step(dt){
   tagsAndEnd();
   S.calls=S.calls.filter(c=>S.time-c.t<6);
 }
+/* de bel: het spel stopt meteen, de lopende ronde telt niet */
+function ringBell(){
+  S.over=true;S.ended=true;S.tb=null;
+  sfx('bell');
+  say('<b>De bel!</b> De speeltijd is voorbij.');
+  showEnd();
+}
+function mvpOf(t){
+  const ks=S.kids.filter(k=>k.team===t);if(!ks.length)return null;
+  return ks.slice().sort((a,b)=>(b.st.tags+b.st.cross*2)-(a.st.tags+a.st.cross*2)||a.st.got-b.st.got)[0];
+}
+function endData(me){
+  const s=S.score,mine=s[me],their=s[1-me];
+  const nm=t=>S.watch?(t===0?'Blauw':'Oranje'):(t===me?'Jij':'Je tegenstander');
+  let title;
+  if(mine===their)title='Gelijkspel';
+  else if(S.watch)title=`${mine>their?'Blauw':'Oranje'} wint`;
+  else title=mine>their?'Jouw ploeg wint':'De andere ploeg wint';
+  const lines=[];
+  for(const t of [me,1-me]){const k=mvpOf(t);if(!k)continue;
+    const who=S.watch?(t===0?'Blauw':'Oranje'):(t===me?'Jouw ploeg':'Andere ploeg');
+    lines.push(`${who}: <b>${esc(k.name)}</b>, ${k.st.tags} ${k.st.tags===1?'tik':'tikken'} en ${k.st.cross}× over C`);}
+  const tg=S.kids.slice().sort((a,b)=>b.st.tags-a.st.tags)[0];
+  if(tg&&tg.st.tags)lines.push(`Meeste tikken: <b>${esc(tg.name)}</b> (${tg.st.tags})`);
+  lines.push(`Rondes gespeeld: ${S.round-(S.over&&!S.tb?1:0)}`);
+  return {title,s:[mine,their],lines,marks:S.marks.map(m=>[m[0],m[1],m[2]===me?0:1,m[3]])};
+}
+function drawEndMap(marks){
+  const c=document.getElementById('endMap'),g=c.getContext('2d'),sx=c.width/37,sy=c.height/25;
+  g.clearRect(0,0,c.width,c.height);g.fillStyle=C.asfalt;g.fillRect(0,0,c.width,c.height);
+  g.strokeStyle='rgba(238,236,226,.6)';g.lineWidth=1.5;g.strokeRect(1,1,35*sx-1,25*sy-2);g.strokeRect(1,10*sy,5*sx,5*sy);
+  g.beginPath();g.moveTo(35*sx,0);g.lineTo(35*sx,c.height);g.lineWidth=3;g.stroke();
+  for(const [x,y,t,kind] of marks){g.fillStyle=t===0?C.mijn:C.ander;
+    if(kind==='c'){const X=35*sx,Y=y*sy;g.beginPath();for(let i=0;i<10;i++){const r=i%2?3:7,a=-Math.PI/2+i*Math.PI/5;g.lineTo(X+Math.cos(a)*r,Y+Math.sin(a)*r);}g.closePath();g.fill();}
+    else{g.globalAlpha=.75;g.beginPath();g.arc(x*sx,y*sy,3,0,7);g.fill();g.globalAlpha=1;}}
+}
+function renderEnd(d,host){
+  document.getElementById('endTitle').textContent=d.title;
+  document.getElementById('endS0').textContent=d.s[0];document.getElementById('endS1').textContent=d.s[1];
+  document.getElementById('endMvp').innerHTML=d.lines.map(l=>`<li>${l}</li>`).join('');
+  drawEndMap(d.marks);
+  document.getElementById('endRematch').hidden=!host;document.getElementById('endNew').hidden=!host;
+  document.getElementById('endWait').hidden=host;
+  ['repOv','tbOv','statsOv'].forEach(id=>document.getElementById(id).hidden=true);
+  document.getElementById('endOv').hidden=false;
+}
+function showEnd(){
+  if(S.pos)release(null);if(S.rpos)remoteRelease(null);
+  renderEnd(endData(0),!isGuest());
+  if(isHost()){sendStats();netSend({t:'end',d:endData(1)});}
+  syncUI();
+}
+function endAction(kind){
+  document.getElementById('endOv').hidden=true;
+  if(kind==='menu'){if(online())netLeave();S.over=true;S.started=false;setWatch(false);document.getElementById('startOv').hidden=false;return;}
+  newGame(kind==='rematch');
+  if(isHost())sendInit();
+}
+document.getElementById('endRematch').addEventListener('click',()=>endAction('rematch'));
+document.getElementById('endNew').addEventListener('click',()=>endAction('new'));
+document.getElementById('endMenu').addEventListener('click',()=>endAction('menu'));
 function tbTimeout(){
   S.over=true;S.tb=null;S.pendingSwap=false;
   say('Tiebreaker: <b>3 minuten om</b>, geen beslissing. Gewone ronde, zelfde rollen.');

@@ -331,5 +331,5 @@ function captainT(T){
 function startCountdown(by){
   if(S.cd)return;
   S.cd={left:10,by:by.name};S.ev.cdBy=by.name;S.ev.cdAt=S.rt;
-  say(`<b>${by.name}</b> begint af te tellen.`);
+  say(`<b>${by.name}</b> begint af te tellen.`);feedAll(`${by.name} telt af`,by.team);
 }
