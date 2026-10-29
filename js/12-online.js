@@ -27,7 +27,7 @@ function setOnline(on){document.body.classList.toggle('online',on);if(on){S.spee
 
 /* ---- host ---- */
 function startHost(){
-  NET.mode='host';NET.guestGone=true;NET.joined=false;setOnline(true);
+  setWatch(false);NET.mode='host';NET.guestGone=true;NET.joined=false;setOnline(true);
   document.getElementById('startOv').hidden=true;document.getElementById('lobbyOv').hidden=false;
   const st=document.getElementById('lobbyState');
   const show=code=>{NET.code=code;document.getElementById('lobbyCode').textContent=code;
@@ -144,7 +144,7 @@ function hostHandle(m){
 function startJoin(code){
   code=(code||'').toUpperCase().replace(/[^A-Z]/g,'');
   if(code.length!==4){netErr('Een code heeft 4 letters.');return;}
-  netErr('');NET.mode='guest';NET.code=code;setOnline(true);
+  netErr('');setWatch(false);NET.mode='guest';NET.code=code;setOnline(true);
   const btn=document.getElementById('startBtn');btn.disabled=true;btn.textContent='Verbinden…';
   const fail=msg=>{btn.disabled=false;btn.textContent='Meedoen';NET.mode='off';setOnline(false);netErr(msg);
     try{NET.peer&&NET.peer.destroy();}catch(_){}NET.peer=null;NET.conn=null;};

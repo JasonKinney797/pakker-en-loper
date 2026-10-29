@@ -9,7 +9,7 @@ function statsHTML(team,label,cls){
 }
 function openStats(){
   if(!S.kids.length)return;if(isHost())sendStats();
-  document.getElementById('statsBody').innerHTML=statsHTML(0,'Jouw ploeg','mijn')+statsHTML(1,'Andere ploeg','ander');
+  document.getElementById('statsBody').innerHTML=statsHTML(0,S.watch?'Blauw':'Jouw ploeg','mijn')+statsHTML(1,S.watch?'Oranje':'Andere ploeg','ander');
   if(!S.paused&&!S.over&&S.started&&!online()){S.paused=true;S._statsPaused=true;}
   document.getElementById('statsOv').hidden=false;syncUI();
 }

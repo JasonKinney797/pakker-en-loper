@@ -155,7 +155,7 @@ function callHelp(k){
     const delay=(1-L.resp)*2;
     h.ai.call={x:c.x,y:c.y,t:S.time+delay,until:S.time+delay+6};
   }
-  if(k.team===0)toast(`${k.name} roept om hulp bij ${zoneOf(k.y)}.`);
+  if(k.team===0&&!S.watch)toast(`${k.name} roept om hulp bij ${zoneOf(k.y)}.`);
   else if(isHost()){netSend({t:'toast',m:`${k.name} roept om hulp bij ${zoneOf(k.y)}.`});netSend({t:'ping',x:k.x,y:k.y});netSend({t:'sfx',n:'help'});}
 }
 function hunter(k){

@@ -59,7 +59,7 @@ const NET={mode:'off',conn:null,peer:null,bc:null,code:'',lastRx:0,guestGone:fal
 const online=()=>NET.mode!=='off';
 const isGuest=()=>NET.mode==='guest';
 const isHost=()=>NET.mode==='host';
-const isAI=t=>t===1?!(isHost()&&!NET.guestGone):!!S.auto0;   // auto0: ook jouw ploeg door de computer (alleen voor tests)
+const isAI=t=>t===1?!(isHost()&&!NET.guestGone):!!S.auto0;   // in kijkmodus is S.auto0 aan: beide ploegen zijn computer   // auto0: ook jouw ploeg door de computer (alleen voor tests)
 const aiTeams=()=>[0,1].filter(isAI);
 
 function rollKid(id,name,team){
@@ -70,7 +70,7 @@ function rollKid(id,name,team){
     stam:clamp(gauss(11.5,1.8),8,15),
     react:clamp(gauss(.35,.05),.25,.45),
     reach:1.1+rand()*.1,
-    level:wpick(team===1&&!online()?LV_ROLL_CPU:LV_ROLL),
+    level:wpick((team===1||S.watch)&&!online()?LV_ROLL_CPU:LV_ROLL),
     x:0,y:0,vx:0,vy:0,px:0,py:0,face:0,energy:1,tired:false,status:'active',
     orders:[],role:'',role2:'',cond:'cd',condVal:0,switched:false,post:null,
     mem:new Map(),tagCD:0,lastTurn:-9,nextScan:rand()*2,scanUntil:0,intent:null,look:null,
@@ -128,7 +128,7 @@ function startRound(){
   for(const id of [...S.sel]){const k=S.byId.get(id);if(!k||k.status!=='active')S.sel.delete(id);}
   planAI();
   const lbl=S.tb?'Tiebreaker':'Ronde '+S.round;
-  const rl=t=>`<b>${lbl}</b>: opstellen. Jouw ploeg ${S.role[t]==='lopers'?'loopt':'pakt'}. Druk op Klaar als je klaarstaat.`;
+  const rl=t=>`<b>${lbl}</b>: opstellen. Jouw ploeg ${S.role[t]==='lopers'?'loopt':'pakt'}.${S.watch?'':' Druk op Klaar als je klaarstaat.'}`;
   say(rl(0),rl(1));
 }
 

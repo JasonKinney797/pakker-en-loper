@@ -8,7 +8,8 @@ function enemyAt(w,tol){
   for(const k of S.kids){if(!ghostEnemy(k))continue;const p=S.vis0.has(k.id)?k:S.ghost.get(k.id);const d=hyp(p.x-w.x,p.y-w.y);if(d<bd){bd=d;b=k;}}
   return b;
 }
-function selected(){return [...S.sel].map(id=>S.byId.get(id)).filter(k=>k&&k.team===0&&k.status==='active');}
+function selected(){return [...S.sel].map(id=>S.byId.get(id)).filter(k=>k&&(k.team===0||S.watch)&&k.status==='active');}
+const mineSel=k=>(k.team===0||S.watch)&&k.status==='active';
 function giveOrder(o,queue,ks){
   ks=ks||selected();if(!ks.length)return;
   queue=queue||S.queue;
@@ -59,7 +60,7 @@ function boxSelect(d,add){
   if(!add)S.sel.clear();
   const a=toW(d.sx,d.sy),b=toW(d.cx,d.cy);
   const x0=Math.min(a.x,b.x),x1=Math.max(a.x,b.x),y0=Math.min(a.y,b.y),y1=Math.max(a.y,b.y);
-  for(const k of S.kids)if(k.team===0&&k.status==='active'&&k.x>=x0&&k.x<=x1&&k.y>=y0&&k.y<=y1)S.sel.add(k.id);
+  for(const k of S.kids)if(mineSel(k)&&k.x>=x0&&k.x<=x1&&k.y>=y0&&k.y<=y1)S.sel.add(k.id);
   syncUI();
 }
 const touchTol=()=>Math.max(.75,24/SC);
@@ -67,7 +68,8 @@ function tapAt(px,py){
   if(!S.started)return;
   const w=toW(px,py),tol=touchTol();
   if(S.cmd){execCmd(w,S.queue,tol);return;}
-  const own=pickKid(w,k=>k.team===0&&k.status==='active',tol);
+  const own=pickKid(w,mineSel,tol);
+  if(S.watch){S.sel=own?new Set([own.id]):new Set();syncUI();return;}
   if(own){
     const now=performance.now();
     if(lastTap&&lastTap.id===own.id&&now-lastTap.t<380){lastTap=null;S.sel=new Set([own.id]);tryPossess(own);return;}
@@ -84,7 +86,7 @@ cv.addEventListener('pointerdown',e=>{
   if(e.pointerType==='mouse'){
     const w=toW(q.x,q.y);
     if(S.over&&!S.paused&&!S.started)return;
-    if(e.button===2){if(S.cmd)setCmd(null);orderAt(w,e.shiftKey,null,true);return;}
+    if(e.button===2){if(S.watch)return;if(S.cmd)setCmd(null);orderAt(w,e.shiftKey,null,true);return;}
     if(e.button!==0)return;
     if(S.cmd){execCmd(w,e.shiftKey);return;}
     drag={sx:q.x,sy:q.y,cx:q.x,cy:q.y,box:false,shift:e.shiftKey};
@@ -142,7 +144,7 @@ window.addEventListener('pointermove',e=>{
   if(e.pointerType!=='mouse')return;
   const q=local(e);
   mouseW=toW(q.x,q.y);
-  hover=pickKid(mouseW,k=>k.team===0||k.status!=='active'||S.vis0.has(k.id));
+  hover=pickKid(mouseW,k=>S.watch||k.team===0||k.status!=='active'||S.vis0.has(k.id));
   if(drag){drag.cx=q.x;drag.cy=q.y;if(Math.abs(q.x-drag.sx)+Math.abs(q.y-drag.sy)>6)drag.box=true;}
 });
 window.addEventListener('pointerup',e=>{
@@ -151,7 +153,7 @@ window.addEventListener('pointerup',e=>{
   if(d.box)boxSelect(d,d.shift);
   else{
     if(!d.shift)S.sel.clear();
-    const k=pickKid(toW(d.sx,d.sy),k=>k.team===0&&k.status==='active');
+    const k=pickKid(toW(d.sx,d.sy),mineSel);
     if(k){if(d.shift&&S.sel.has(k.id))S.sel.delete(k.id);else S.sel.add(k.id);}
     syncUI();
   }
@@ -163,6 +165,13 @@ window.addEventListener('keydown',e=>{
     if(e.key==='Escape'&&!document.getElementById('statsOv').hidden)closeStats();
     if(e.key==='Enter'&&!document.getElementById('repOv').hidden)nextRound();return;}
   const k=e.key.toLowerCase();
+  if(S.watch&&!e.ctrlKey&&!e.metaKey){   // kijkmodus: alleen pauze, snelheid, statistieken en toetsen
+    if(k===' '){togglePause();e.preventDefault();}
+    else if(k==='-')setSpeed(S.speed===4?2:S.speed===2?1:.5);
+    else if(k==='='||k==='+')setSpeed(S.speed===.5?1:S.speed===1?2:4);
+    else if(k==='k')toggleKeys(true);
+    else if(k==='escape'){S.sel.clear();syncUI();}
+    return;}
   if(k==='o'&&!e.ctrlKey&&!e.metaKey){togglePossess();e.preventDefault();return;}
   if(S.pos&&!e.ctrlKey&&!e.metaKey){
     const mk=MOVEKEY[k];

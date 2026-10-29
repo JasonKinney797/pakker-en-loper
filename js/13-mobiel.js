@@ -17,7 +17,7 @@ document.getElementById('mPanel').addEventListener('click',()=>panelEl.classList
 document.getElementById('mPause').addEventListener('click',()=>{S._sheetPaused=false;togglePause();});
 document.getElementById('mReady').addEventListener('click',playerReady);
 document.getElementById('mCd').addEventListener('click',playerCountdown);
-document.getElementById('mSpeed').addEventListener('click',()=>setSpeed(S.speed===1?2:S.speed===2?.5:1));
+document.getElementById('mSpeed').addEventListener('click',()=>setSpeed(S.watch?(S.speed===1?2:S.speed===2?4:S.speed===4?.5:1):(S.speed===1?2:S.speed===2?.5:1)));
 document.getElementById('mQueue').addEventListener('click',()=>{S.queue=!S.queue;syncUI();});
 document.getElementById('mClear').addEventListener('click',()=>{if(S.cmd)setCmd(null);else{S.sel.clear();syncUI();}});
 document.getElementById('mAll').addEventListener('click',()=>{S.sel=new Set(S.kids.filter(x=>x.team===0&&x.status==='active').map(x=>x.id));syncUI();});

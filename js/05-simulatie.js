@@ -146,7 +146,7 @@ function endRound(winner,crosser){
 function tie(l,p){
   S.over=true;
   say(`<b>${l.name}</b> raakt over C op hetzelfde moment dat ${p?p.name:'een pakker'} hem tikt. <b>Tiebreaker!</b>`);
-  if(online())onlineTiebreak();else showTiebreak();
+  if(online())onlineTiebreak();else if(S.watch)watchTiebreak();else showTiebreak();
 }
 
 /* ---------- Simulatiestap ---------- */
@@ -167,9 +167,12 @@ function step(dt){
     for(const k of S.kids)if(k.status==='active')move(k,dt);
     physics();
     if(S.auto0&&!S.ready[0]&&cpuReady(0))S.ready[0]=true;
-    if(!S.ready[1]&&isAI(1)&&cpuReady(1)){S.ready[1]=true;say('De andere ploeg is <b>klaar</b>.','Jouw ploeg is <b>klaar</b>.');}
+    if(!S.ready[1]&&isAI(1)&&cpuReady(1)){S.ready[1]=true;if(!S.watch)say('De andere ploeg is <b>klaar</b>.','Jouw ploeg is <b>klaar</b>.');}
     if(online()&&S.setupT>=SETUP_MAX&&!(S.ready[0]&&S.ready[1])){S.ready=[true,true];say(`${SETUP_MAX} seconden opstellen zijn om: de ronde start.`);}
-    if(S.ready[0]&&S.ready[1]){S.setup=false;say('<b>Start!</b> Beide ploegen staan klaar.');sfx('whistle');}
+    if(S.ready[0]&&S.ready[1]){
+      if(S.watch){const L=lt(),P=1-L,nm=t=>t===0?'Blauw':'Oranje';
+        log(`${nm(P)} pakt: ${S.ev.tac[P]||'?'}. ${nm(L)} loopt: ${S.ev.tac[L]||'?'}.`);}
+      S.setup=false;say('<b>Start!</b> Beide ploegen staan klaar.');sfx('whistle');}
     return;
   }
   S.rt+=dt;

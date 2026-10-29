@@ -120,6 +120,11 @@ kbd{font-family:var(--f-mono);font-size:11px;background:var(--asfalt);border:1px
 .code{font-family:var(--f-mono);font-size:44px;font-weight:700;letter-spacing:.25em;color:var(--geel)}
 .neterr{color:var(--rood)!important}
 body.online #pauseBtn,body.online [aria-label="Spelsnelheid"],body.online #mPause,body.online #mSpeed,body.online #keysBtn{display:none!important}
+body.watch #readyBtn,body.watch #cdBtn,body.watch #mReady,body.watch #mCd,body.watch #mQueue,body.watch #mPos,body.watch #mCam,
+body.watch [data-tab="cmd"],body.watch [data-tab="form"],body.watch [data-tab="rol"],body.watch #rolBox,body.watch .mbar .mrow:nth-child(2){display:none!important}
+[data-speed="4"]{display:none}
+body.watch [data-speed="4"]{display:inline-block}
+.tdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .tbclock{font-family:var(--f-mono);color:var(--geel)}
 .tik{position:absolute;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));
   width:86px;height:86px;border-radius:50%;background:var(--rood);border:3px solid var(--krijt);color:#fff;

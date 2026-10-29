@@ -85,14 +85,14 @@ function draw(){
   const r=Math.max(.33*SC,5);
   // schimmen van tegenstanders
   for(const k of S.kids){
-    if(k.team===0||k.status!=='active'||S.vis0.has(k.id))continue;
+    if(S.watch||k.team===0||k.status!=='active'||S.vis0.has(k.id))continue;
     const g=S.ghost.get(k.id);if(!g)continue;const age=S.time-g.t;if(age>6)continue;
     ctx.setLineDash([3,3]);ctx.strokeStyle=`rgba(242,121,79,${.55*(1-age/6)})`;ctx.lineWidth=1.5;
     ctx.beginPath();ctx.arc(wx(g.x),wy(g.y),r,0,7);ctx.stroke();ctx.setLineDash([]);
   }
   // kinderen
   for(const k of S.kids){
-    const vis=k.team===0||k.status!=='active'||S.vis0.has(k.id);if(!vis)continue;
+    const vis=S.watch||k.team===0||k.status!=='active'||S.vis0.has(k.id);if(!vis)continue;
     const X=wx(k.x),Y=wy(k.y),pak=!isLoper(k);
     if(k.status==='bench'){ctx.globalAlpha=.35;}
     if(k.status==='prisoner'){ctx.globalAlpha=.55;}

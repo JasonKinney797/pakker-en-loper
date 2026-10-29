@@ -6,7 +6,7 @@ S.pos=null;S.keys=new Set();S.camFollow=true;S.camZ=matchMedia('(pointer:coarse)
 function buzz(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(_){}}
 function canSwitch(){return online()?(S.setup&&!S.over):(S.paused||S.setup);}
 function tryPossess(k){
-  if(!S.started||S.over)return;
+  if(!S.started||S.over||S.watch)return;
   if(!k||k.team!==0||k.status!=='active'){toast('Kies één kind van jouw ploeg dat nog meedoet.');return;}
   if(S.pos&&S.pos.id===k.id)return;
   if(!canSwitch()){toast(online()?'Online kan overnemen alleen tijdens het opstellen.':'Overnemen kan alleen in pauze of tijdens het opstellen.');return;}

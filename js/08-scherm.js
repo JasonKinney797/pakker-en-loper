@@ -2,6 +2,12 @@
 /* ---------- Verslagen en tiebreaker ---------- */
 function showReport(winner,wt,wasTb){
   const ev=S.ev,L=lt(),P=1-L;
+  if(S.watch){
+    const who=wt===0?'Blauw':'Oranje';
+    const line=winner==='lopers'?`${ev.cross.name} raakte over C bij ${zoneOf(ev.cross.y)}.`:'Alle lopers zijn getikt.';
+    toastLong(`${wasTb?'Tiebreaker':'Ronde '+S.round}: punt voor ${who}. ${line}`,4000);
+    S.nextIn=2.5;syncUI();return;
+  }
   if(online()){
     for(const me of [0,1]){
       const title=`${wasTb?'Tiebreaker':'Ronde '+S.round}: punt voor ${wt===me?'jouw ploeg':'de andere ploeg'}`;
@@ -29,6 +35,7 @@ function showReport(winner,wt,wasTb){
   ov.hidden=false;document.getElementById('repNext').focus();
 }
 function showInfoReport(title,txt){
+  if(S.watch){toastLong(title+'. '+txt,4000);S.nextIn=2.5;syncUI();return;}
   if(online()){toastLong(title+'. '+txt,5000);netSend({t:'toast',m:title+'. '+txt,ms:5000});sendStats();NET.nextAt=performance.now()+3500;syncUI();return;}
   if(S.reportsOff){nextRound();return;}
   document.getElementById('repTitle').textContent=title;
@@ -79,6 +86,13 @@ function finishOnlineTiebreak(){
   netSend({t:'tbclose'});
   startRound();buildRoster();syncUI();
 }
+function watchTiebreak(){
+  const n0=S.role[0]==='lopers'?3:5,n1=S.role[1]==='lopers'?3:5;
+  const a=cpuPick(0,n0).map(k=>k.id),b=cpuPick(1,n1).map(k=>k.id);
+  S.tb={clock:180,chosen:new Set(a.concat(b))};
+  log(`Tiebreaker: Blauw kiest ${a.map(id=>S.byId.get(id).name).join(', ')}; Oranje kiest ${b.map(id=>S.byId.get(id).name).join(', ')}.`);
+  S.nextIn=-1;S.tbStart=2;
+}
 function showTiebreak(){
   const myLoper=S.role[0]==='lopers',n=myLoper?3:5;
   document.getElementById('tbText').textContent=`Zelfde regels, 3 lopers tegen 5 pakkers, met een eigen klok van 3 minuten. Jouw ploeg ${myLoper?'loopt':'pakt'}: kies ${n} kinderen. De andere ploeg kiest ook.`;
@@ -103,9 +117,11 @@ function showTiebreak(){
 /* ---------- UI ---------- */
 const logEl=document.getElementById('log');
 function logClear(){logEl.innerHTML='';}
-function log(html){const li=document.createElement('li');li.innerHTML=`<span class="tm">${fmt(S.rt||0)}</span>${html}`;logEl.prepend(li);while(logEl.children.length>60)logEl.lastChild.remove();}
+function persp(s){if(!S.watch)return s;
+  return String(s).replace(/Jouw ploeg/g,'Blauw').replace(/jouw ploeg/g,'Blauw').replace(/De andere ploeg/g,'Oranje').replace(/de andere ploeg/g,'Oranje');}
+function log(html){html=persp(html);const li=document.createElement('li');li.innerHTML=`<span class="tm">${fmt(S.rt||0)}</span>${html}`;logEl.prepend(li);while(logEl.children.length>60)logEl.lastChild.remove();}
 function toast(t){toastLong(t,3200);}
-function toastLong(t,ms){const el=document.createElement('div');el.className='toast';el.textContent=t;document.getElementById('toasts').prepend(el);setTimeout(()=>el.remove(),ms||3200);}
+function toastLong(t,ms){t=persp(t);const el=document.createElement('div');el.className='toast';el.textContent=t;document.getElementById('toasts').prepend(el);setTimeout(()=>el.remove(),ms||3200);}
 /* een bericht voor beide spelers: h0 voor jou, h1 voor je vriend (zelfde als h0 als je niets opgeeft) */
 function say(h0,h1){log(h0);if(isHost())netSend({t:'log',h:h1===undefined?h0:h1});}
 function logTeam(t,h){if(t===0)log(h);else if(isHost())netSend({t:'log',h});}
@@ -121,8 +137,10 @@ function fx(k,txt){S.floats.push({x:k.x,y:k.y,t:S.time,txt});
 function toggleKeys(on){document.getElementById('keysOv').hidden=!on;if(on&&!S.paused&&!S.over&&!online()){S.paused=true;S._keysPaused=true;}else if(!on&&S._keysPaused){S.paused=false;S._keysPaused=false;}syncUI();}
 const ROLE_TXT={jager:'jager',bewaker:'bewaker',muur:'muur',boogman:'boogman',vangnet:'vangnet',sneaker:'sneaker',lokaas:'lokaas'};
 const ORD_TXT={guard:'bewaakt B',move:'ga naar',attack:'aanval',follow:'volgt',cover:'dekt',inout:'in-uit',hold:'houdt positie',net:'vangnet'};
+const AI_TXT={jager:'jager',muur:'muur',boog:'boogman',vangnet:'vangnet',bewaker:'bewaker',jaagt:'jaagt',wacht:'wacht in B',stage:'verzamelt',charge:'valt aan',decoy:'lokaas',sneak:'sneaker'};
 function kidStatus(k){
   if(k.status==='prisoner')return 'getikt';if(k.status==='bench')return 'bank';
+  if(isAI(k.team))return AI_TXT[k.ai&&k.ai.role]||'vrij';
   if(S.pos&&S.pos.id===k.id)return 'jij';
   if(k.orders.length)return ORD_TXT[k.orders[0].t]+(k.orders.length>1?' +'+(k.orders.length-1):'');
   const r=activeRole(k);if(S.set.mode==='rol'&&r)return ROLE_TXT[r]+(k.role2&&!k.switched?' → '+ROLE_TXT[k.role2]:'');
@@ -130,9 +148,10 @@ function kidStatus(k){
 }
 function buildRoster(){
   const box=document.getElementById('roster');
-  const mine=S.kids.filter(k=>k.team===0).sort((a,b)=>b.top-a.top);
-  box.innerHTML=mine.map(k=>`<button data-kid="${k.id}"><span class="n">${esc(k.name)}</span><span class="sp">${k.top.toFixed(2)}</span><span class="st" data-st="${k.id}"></span></button>`).join('');
-  document.getElementById('teamSize').textContent=`${mine.length} kinderen · m/s`;
+  const mine=S.kids.filter(k=>k.team===0||S.watch).sort((a,b)=>a.team-b.team||b.top-a.top);
+  box.innerHTML=mine.map(k=>`<button data-kid="${k.id}"><span class="n">${S.watch?`<i class="tdot" style="background:var(${k.team?'--ander':'--mijn'})"></i>`:''}${esc(k.name)}</span><span class="sp">${k.top.toFixed(2)}</span><span class="st" data-st="${k.id}"></span></button>`).join('');
+  document.getElementById('teamSize').textContent=S.watch?'beide ploegen · m/s':`${mine.length} kinderen · m/s`;
+  document.querySelector('[data-tab="team"] h2').firstChild.textContent=S.watch?'Ploegen ':'Jouw ploeg ';
 }
 document.getElementById('roster').addEventListener('click',e=>{
   const b=e.target.closest('[data-kid]');if(!b)return;const k=S.byId.get(+b.dataset.kid);
@@ -145,7 +164,8 @@ function syncUI(){
   try{for(const id of ['soundBtn','mSound'])document.getElementById(id).setAttribute('aria-pressed',String(SFX.on));}catch(_){}
   if(typeof syncPossess==='function')try{syncPossess();}catch(_){}
   document.getElementById('s0').textContent=S.score[0];document.getElementById('s1').textContent=S.score[1];
-  document.getElementById('roleChip').textContent='Jij: '+S.role[0];
+  document.getElementById('roleChip').textContent=S.watch?`Blauw: ${S.role[0]}`:'Jij: '+S.role[0];
+  {const t=document.querySelectorAll('.score .t');t[0].textContent=S.watch?'Blauw':'Jouw ploeg';t[1].textContent=S.watch?'Oranje':'Andere ploeg';}
   const cc=document.getElementById('clockChip');
   cc.innerHTML=S.tb?`Tiebreaker <b>${fmt(S.tb.clock)}</b>`:`Blok <b>${fmt(S.block)}</b>`;
   cc.className='chip'+(S.tb?' warn':'');
@@ -168,18 +188,18 @@ function syncUI(){
   const si=document.getElementById('selInfo');
   if(ks.length===1){const k=ks[0];
     si.innerHTML=`<dl class="stats">
-      <dt>Naam</dt><dd>${esc(k.name)}</dd>
+      <dt>Naam</dt><dd>${esc(k.name)}${S.watch?` (${k.team?'Oranje':'Blauw'})`:''}</dd>
       <dt>Topsnelheid</dt><dd>${k.top.toFixed(2)} m/s (${(k.top*3.6).toFixed(1)} km/u)</dd>
       <dt>Versnelling</dt><dd>${k.acc.toFixed(2)} s tot top</dd>
       <dt>Wendbaarheid</dt><dd>${k.agi}/100</dd>
       <dt>Uithouding</dt><dd>${k.stam.toFixed(1)} s volle sprint</dd>
       <dt>Reactietijd</dt><dd>${k.react.toFixed(2)} s</dd>
       <dt>Tikbereik</dt><dd>${k.reach.toFixed(2)} m</dd>
-      ${S.set.realism?`<dt>Niveau</dt><dd>${LV[k.level].nm}</dd>`:''}
+      ${(S.set.realism||S.watch)?`<dt>Niveau</dt><dd>${LV[k.level].nm}</dd>`:''}
       <dt>Bezig</dt><dd>${kidStatus(k)}</dd>
     </dl><div class="meter" title="Energie"><i style="width:${Math.round(k.energy*100)}%;${k.tired?'background:var(--rood)':''}"></i></div>`;
   }else if(ks.length){si.textContent=ks.map(k=>k.name).join(', ');}
-  else si.innerHTML=(typeof TOUCH!=='undefined'&&TOUCH)?'Tik op een kind van jouw ploeg, of druk lang en sleep een vak. Houd een groepknop (1–5) ingedrukt om je selectie te bewaren.':'Klik op een kind van jouw ploeg, of sleep een vak rond meerdere kinderen. <kbd>Ctrl</kbd>+<kbd>1</kbd>–<kbd>5</kbd> bewaart een groep.';
+  else si.innerHTML=S.watch?'Klik of tik op een kind om zijn snelheid, niveau en taak te zien.':(typeof TOUCH!=='undefined'&&TOUCH)?'Tik op een kind van jouw ploeg, of druk lang en sleep een vak. Houd een groepknop (1–5) ingedrukt om je selectie te bewaren.':'Klik op een kind van jouw ploeg, of sleep een vak rond meerdere kinderen. <kbd>Ctrl</kbd>+<kbd>1</kbd>–<kbd>5</kbd> bewaart een groep.';
   document.querySelectorAll('#roster [data-kid]').forEach(b=>b.classList.toggle('sel',S.sel.has(+b.dataset.kid)));
   document.querySelectorAll('#roster [data-st]').forEach(s=>{const k=S.byId.get(+s.dataset.st);s.textContent=kidStatus(k);s.classList.toggle('out',k.status!=='active');});
 }
@@ -197,6 +217,7 @@ document.getElementById('readyBtn').addEventListener('click',playerReady);
 document.getElementById('keysBtn').addEventListener('click',()=>toggleKeys(true));
 document.getElementById('keysClose').addEventListener('click',()=>toggleKeys(false));
 document.getElementById('newBtn').addEventListener('click',()=>{
+  S.nextIn=0;S.tbStart=0;
   if(isGuest()){netLeave('Je hebt het spel verlaten.');return;}
   if(isHost()){newGame();sendInit();return;}
   S.over=true;S.paused=true;document.getElementById('startOv').hidden=false;});
@@ -214,17 +235,25 @@ document.querySelectorAll('[data-set]').forEach(b=>b.addEventListener('click',()
   if(key==='net')setNetChoice(v);
 }));
 let netChoice='off';
+function setWatch(on){
+  S.watch=on;S.auto0=on;S.nextIn=0;S.tbStart=0;
+  document.body.classList.toggle('watch',on);
+  if(!on&&S.speed===4)setSpeed(2);
+  if(on&&S.pos)release(null);
+  if(on&&typeof setTab==='function')setTab('sel');
+}
 function setNetChoice(v){
   netChoice=v;netErr('');
   document.querySelectorAll('[data-set="net"]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===v)));
   document.getElementById('joinOpt').hidden=v!=='join';
-  document.getElementById('hostOpts').hidden=v==='join';
-  document.getElementById('netD').textContent={off:'Jij tegen de computer, met pauze.',host:'Jij maakt het spel aan en kiest de instellingen. Je krijgt een code voor je vriend. Online is er geen pauze.',join:'Tik de code van je vriend in. Hij kiest de instellingen.'}[v];
-  document.getElementById('startBtn').textContent={off:'Naar de speelplaats',host:'Spel aanmaken',join:'Meedoen'}[v];
+  document.getElementById('hostOpts').hidden=v==='join'||v==='watch';
+  document.getElementById('netD').textContent={off:'Jij tegen de computer, met pauze.',host:'Jij maakt het spel aan en kiest de instellingen. Je krijgt een code voor je vriend. Online is er geen pauze.',join:'Tik de code van je vriend in. Hij kiest de instellingen.',watch:'Twee computerploegen spelen tegen elkaar en leren van elkaar. Jij kijkt, met het hele veld zichtbaar. Pauzeren en versnellen tot 4× kan.'}[v];
+  document.getElementById('startBtn').textContent={off:'Naar de speelplaats',host:'Spel aanmaken',join:'Meedoen',watch:'Kijken'}[v];
 }
 document.getElementById('startBtn').addEventListener('click',()=>{
   if(netChoice==='host'){startHost();return;}
   if(netChoice==='join'){startJoin(document.getElementById('joinCode').value);return;}
+  setWatch(netChoice==='watch');
   document.getElementById('startOv').hidden=true;S.started=true;
   document.getElementById('rolBox').dataset.for='';
   newGame();
