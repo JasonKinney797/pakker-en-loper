@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pakker En Loper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="bar">
+  <div class="logo">Pakker <span>En</span> Loper</div>
+  <div class="score" aria-live="polite">
+    <span class="t">Jouw ploeg</span><span class="mijn" id="s0">0</span><span>–</span><span class="ander" id="s1">0</span><span class="t">Andere ploeg</span>
+  </div>
+  <span class="chip" id="roleChip">Jij: lopers</span>
+  <span class="chip" id="clockChip">Blok <b>10:00</b></span>
+  <span class="chip" id="cdChip">B is veilig</span>
+  <span class="spacer"></span>
+  <div class="ctrls">
+    <button id="readyBtn" class="ready">Klaar <kbd>Enter</kbd></button>
+    <button id="cdBtn" hidden>Aftellen <kbd>T</kbd></button>
+    <button id="pauseBtn">Pauze <kbd>Spatie</kbd></button>
+    <div class="seg" role="group" aria-label="Spelsnelheid">
+      <button data-speed="0.5">0,5×</button><button data-speed="1" aria-pressed="true">1×</button><button data-speed="2">2×</button>
+    </div>
+    <button id="statsBtn">Statistieken</button>
+    <button id="soundBtn" aria-pressed="true">Geluid</button>
+    <button id="keysBtn">Toetsen <kbd>K</kbd></button>
+    <button id="newBtn">Nieuw spel</button>
+  </div>
+</header>
+
+<main class="layout">
+  <div class="col">
+  <div class="stage" id="stage">
+    <canvas id="veld" aria-label="Speelplaats van bovenaf"></canvas>
+    <div class="toasts" id="toasts"></div>
+    <div class="cmdhint" id="cmdHint" hidden></div>
+    <button class="tik" id="tikBtn" hidden>Tik</button>
+  </div>
+  <div class="mbar" id="mbar">
+    <div class="mrow">
+      <button id="mPanel">Paneel</button>
+      <button id="mPause">Pauze</button>
+      <button id="mReady" class="ready">Klaar</button>
+      <button id="mCd" hidden>Aftellen</button>
+      <button id="mSpeed">1×</button>
+      <button id="mQueue" aria-pressed="false">Wachtrij</button>
+    </div>
+    <div class="mrow">
+      <button class="grp" data-grp="1">1</button><button class="grp" data-grp="2">2</button><button class="grp" data-grp="3">3</button><button class="grp" data-grp="4">4</button><button class="grp" data-grp="5">5</button>
+      <button id="mAll">Alles</button>
+      <button id="mClear">Wis</button>
+    </div>
+    <div class="mrow posrow">
+      <button id="mPos">Overnemen</button>
+      <button id="mCam" aria-pressed="true">Camera volgt</button>
+      <button id="mSound" aria-pressed="true">Geluid</button>
+    </div>
+  </div>
+  </div>
+
+  <aside class="panel" id="panel">
+    <div class="tabs" id="tabs" role="tablist">
+      <button data-tab="sel">Selectie</button><button data-tab="cmd">Bevelen</button><button data-tab="form">Formaties</button>
+      <button data-tab="rol" id="tabRol">Rollen</button><button data-tab="team">Ploeg</button><button data-tab="log">Verloop</button>
+      <button class="close" id="sheetClose">Sluiten</button>
+    </div>
+    <section class="box" data-tab="sel">
+      <h2>Selectie <small id="selCount">niemand</small></h2>
+      <div id="selInfo" class="hint">Klik op een kind van jouw ploeg, of sleep een vak rond meerdere kinderen. <kbd>Ctrl</kbd>+<kbd>1</kbd>–<kbd>5</kbd> bewaart een groep.</div>
+    </section>
+
+    <section class="box" data-tab="cmd">
+      <h2>Bevelen <small>Shift = wachtrij</small></h2>
+      <div class="row">
+        <span class="hint">Tempo</span>
+        <div class="seg" role="group" aria-label="Tempo">
+          <button data-pace="walk">Wandelen <kbd>Q</kbd></button><button data-pace="jog">Joggen <kbd>W</kbd></button><button data-pace="sprint" aria-pressed="true">Sprinten <kbd>E</kbd></button>
+        </div>
+      </div>
+      <div class="btns">
+        <button data-cmd="move">Ga naar <kbd>G</kbd></button>
+        <button data-cmd="follow">Volg <kbd>F</kbd></button>
+        <button data-cmd="cover">Dek <kbd>D</kbd></button>
+        <button data-cmd="inout">In-uit <kbd>I</kbd></button>
+        <button data-cmd="attack">Aanval <kbd>A</kbd></button>
+        <button data-act="hold">Houd positie <kbd>H</kbd></button>
+        <button data-act="stop">Stop <kbd>S</kbd></button>
+        <label class="field">In-uit afstand (m)<input type="number" id="ioDist" min="1" max="4" step="0.1" value="1.8"></label>
+      </div>
+      <div class="row"><button id="posBtn">Overnemen <kbd>O</kbd></button>
+        <label class="row hint"><input type="checkbox" id="camFollow" checked> Camera volgt</label></div>
+      <div class="hint" id="posHelp">Overnemen: kies één kind, in pauze of tijdens het opstellen. Je ziet dan alleen wat dat kind ziet.</div>
+      <div class="hint" id="cmdHelp">Rechtsklik op de grond: ga naar. Rechtsklik op een tegenstander: achtervolgen (pakkers) of in-uit (lopers).</div>
+    </section>
+
+    <section class="box" data-tab="form">
+      <h2>Formaties <small id="formFor">lopers</small></h2>
+      <div class="btns" id="formP">
+        <label class="field" style="grid-column:1/-1">Afstand van de muur tot C (m), ook voor de rollen muur en boogman
+          <input type="number" id="wallDist" min="1" max="25" step="0.5" value="3"></label>
+        <button data-form="muur">Muur</button>
+        <button data-form="boogBoven">Boog hoek boven</button>
+        <button data-form="boogOnder">Boog hoek onder</button>
+        <button data-form="vangnet">Muur + vangnet</button>
+        <button data-form="bewaak">Bewaak B (max 2)</button>
+      </div>
+      <div class="btns" id="formL">
+        <button data-form="conc">Concentratie op punt</button>
+        <button data-form="spread">Verspreid</button>
+        <button data-form="charge">Aanval op C</button>
+        <button data-form="home">Terug naar B</button>
+      </div>
+    </section>
+
+    <section class="box" id="rolBox" data-tab="rol" hidden>
+      <h2>Rollen <small>voor de selectie</small></h2>
+      <div class="btns">
+        <label class="field">Rol<select id="r1"></select></label>
+        <label class="field">Tweede rol<select id="r2"></select></label>
+        <label class="field">Wissel als<select id="rc">
+          <option value="cd">aftellen klaar</option>
+          <option value="gap">gat van X m gezien</option>
+          <option value="help">hulp geroepen</option>
+          <option value="time">na X seconden</option>
+          <option value="near">tegenstander binnen X m</option>
+          <option value="left">nog X lopers over</option>
+        </select></label>
+        <label class="field">X<input type="number" id="rv" min="0" max="600" step="0.5" value="2"></label>
+      </div>
+      <div class="row"><button id="rolApply">Rollen toepassen</button>
+        <label class="field" style="flex-direction:row;align-items:center;gap:6px">Boog-hoek<select id="boogHoek"><option value="onder">onder</option><option value="boven">boven</option></select></label></div>
+    </section>
+
+    <section class="box" data-tab="team">
+      <h2>Jouw ploeg <small id="teamSize"></small></h2>
+      <button id="statsBtn2">Statistieken van beide ploegen</button>
+      <div class="roster" id="roster"></div>
+    </section>
+
+    <section class="box" data-tab="log">
+      <h2>Verloop</h2>
+      <ul class="log" id="log"></ul>
+    </section>
+  </aside>
+</main>
+
+<div class="ov" id="startOv">
+  <div class="card">
+    <h1>Pakker <span>En</span> Loper</h1>
+    <p>Lopers starten in het kot B en moeten met één loper over lijn C geraken. Pakkers tikken. Na 10 seconden aftellen is B niet meer veilig. Hoogstens twee pakkers binnen 3 meter van B. Alle lopers getikt: punt voor de pakkers en wisselen. Elke ronde begint met opstellen: de ronde start pas als beide ploegen klaar zijn.</p>
+    <div class="opt">
+      <span class="lbl">Besturing</span>
+      <div class="seg" role="group" aria-label="Besturing"><button data-set="mode" data-v="dyn" aria-pressed="true">Dynamisch</button><button data-set="mode" data-v="rol">Rollen</button></div>
+      <span class="d" id="modeD">Geen rollen. Kinderen doen alleen wat je beveelt, plus ontwijken en tikken op korte afstand.</span>
+    </div>
+    <div class="opt">
+      <span class="lbl">Realisme</span>
+      <div class="seg" role="group" aria-label="Realisme"><button data-set="realism" data-v="0" aria-pressed="true">Uit</button><button data-set="realism" data-v="1">Aan</button></div>
+      <span class="d" id="realD">Jouw kinderen voeren alles perfect uit.</span>
+    </div>
+    <div class="opt">
+      <span class="lbl">Jouw ploeg begint als</span>
+      <div class="seg" role="group" aria-label="Startrol"><button data-set="start" data-v="lopers" aria-pressed="true">Lopers</button><button data-set="start" data-v="pakkers">Pakkers</button></div>
+    </div>
+    <p>Een klas van 25 kinderen uit het 6de leerjaar wordt elk spel opnieuw gerold: 13 tegen 12.</p>
+    <button class="go" id="startBtn">Naar de speelplaats</button>
+  </div>
+</div>
+
+<div class="ov" id="repOv" hidden>
+  <div class="card">
+    <h3 id="repTitle"></h3>
+    <ul class="rep" id="repList"></ul>
+    <div class="row" style="justify-content:space-between">
+      <label class="row hint"><input type="checkbox" id="repOff"> Verslagen overslaan</label>
+      <button class="go" id="repNext">Volgende ronde</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="tbOv" hidden>
+  <div class="card">
+    <h3>Tiebreaker</h3>
+    <p id="tbText"></p>
+    <div class="picks" id="tbPicks"></div>
+    <button class="go" id="tbGo" disabled>Start tiebreaker</button>
+  </div>
+</div>
+
+<div class="ov" id="statsOv" hidden>
+  <div class="card">
+    <h3>Statistieken</h3>
+    <p>Sinds het begin van dit spel. Tikken (Tik): lopers die dit kind tikte. Getikt (Get.): hoe vaak het zelf getikt werd. Over C (C): punten die het scoorde. Net niet (Mis): mislukte tikpogingen.</p>
+    <div id="statsBody"></div>
+    <button class="go" id="statsClose">Sluiten</button>
+  </div>
+</div>
+
+<div class="ov" id="keysOv" hidden>
+  <div class="card">
+    <h3>Toetsen en muis</h3>
+    <dl class="keys">
+      <dt>Linksklik / slepen</dt><dd>Kind selecteren / vak rond meerdere kinderen. Shift voegt toe.</dd>
+      <dt>Rechtsklik</dt><dd>Ga naar (grond), achtervolgen of in-uit (tegenstander), volgen (eigen kind).</dd>
+      <dt><kbd>Shift</kbd> + bevel</dt><dd>Zet het bevel in de wachtrij in plaats van het te vervangen.</dd>
+      <dt><kbd>Spatie</kbd></dt><dd>Pauze aan of uit. In pauze kan je gewoon bevelen geven.</dd>
+      <dt><kbd>-</kbd> <kbd>+</kbd></dt><dd>Spelsnelheid 0,5× / 1× / 2×.</dd>
+      <dt><kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd></dt><dd>Tempo: wandelen, joggen, sprinten.</dd>
+      <dt><kbd>G</kbd> <kbd>F</kbd> <kbd>D</kbd> <kbd>I</kbd> <kbd>A</kbd></dt><dd>Ga naar, volg, dek, in-uit, aanval. Daarna linksklikken op het doel.</dd>
+      <dt><kbd>H</kbd> / <kbd>S</kbd></dt><dd>Houd positie / stop alle bevelen.</dd>
+      <dt><kbd>Ctrl</kbd>+<kbd>1</kbd>–<kbd>5</kbd></dt><dd>Selectie bewaren als groep. <kbd>1</kbd>–<kbd>5</kbd> selecteert die groep.</dd>
+      <dt><kbd>Ctrl</kbd>+<kbd>A</kbd></dt><dd>Hele ploeg selecteren.</dd>
+      <dt><kbd>Enter</kbd></dt><dd>Klaar: jouw ploeg staat opgesteld. De ronde start als beide ploegen klaar zijn.</dd>
+      <dt><kbd>T</kbd></dt><dd>Aftellen starten (als jouw ploeg pakt).</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Bevel annuleren, selectie wissen.</dd>
+      <dt><kbd>O</kbd></dt><dd>Gekozen kind overnemen (in pauze of tijdens het opstellen) of loslaten.</dd>
+      <dt>Overgenomen</dt><dd><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> of pijltjes: lopen (sprinten). <kbd>Shift</kbd> ingedrukt: joggen. <kbd>Spatie</kbd>: tikken. <kbd>P</kbd> of <kbd>Esc</kbd>: pauze. <kbd>O</kbd>: loslaten. De muis blijft voor je andere kinderen.</dd>
+    </dl>
+    <p>Wat geen enkel kind van jouw ploeg ziet, zie je als een vage schim op de plek waar het laatst gezien werd. Kinderen blokkeren elkaars zicht.</p>
+    <button class="go" id="keysClose">Sluiten</button>
+  </div>
+</div>
+
+<script src="js/01-regels.js"></script>
+<script src="js/02-computer-plannen.js"></script>
+<script src="js/03-computer-gedrag.js"></script>
+<script src="js/04-bevelen-rollen.js"></script>
+<script src="js/05-simulatie.js"></script>
+<script src="js/06-tekenen.js"></script>
+<script src="js/07-invoer.js"></script>
+<script src="js/08-scherm.js"></script>
+<script src="js/09-geluid.js"></script>
+<script src="js/10-unit-possession.js"></script>
+<script src="js/11-statistieken.js"></script>
+<script src="js/12-mobiel.js"></script>
+<script src="js/13-lus.js"></script>
+</body>
+</html>
