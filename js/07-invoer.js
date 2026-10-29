@@ -168,7 +168,7 @@ window.addEventListener('keydown',e=>{
     const mk=MOVEKEY[k];
     if(mk){S.keys.add(mk);e.preventDefault();return;}
     if(k==='shift'){S.keys.add('jog');return;}
-    if(k===' '){if(!S.paused&&!S.over)S.pos.tagReq=true;e.preventDefault();return;}
+    if(k===' '){requestTag();e.preventDefault();return;}
     if(k==='p'||k==='escape'){togglePause();e.preventDefault();return;}
   }
   if(e.ctrlKey||e.metaKey){
@@ -186,17 +186,18 @@ window.addEventListener('keydown',e=>{
   if(k==='t'){playerCountdown();return;}
   if(k==='k'){toggleKeys(true);return;}
   if(k==='escape'){if(S.cmd)setCmd(null);else{S.sel.clear();syncUI();}return;}
-  if(k==='-'){setSpeed(S.speed===2?1:.5);return;}
+  if(k==='-'){if(!online())setSpeed(S.speed===2?1:.5);return;}
   if(k==='='||k==='+'){setSpeed(S.speed===.5?1:2);return;}
 });
 window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();const mk=MOVEKEY[k];if(mk)S.keys.delete(mk);if(k==='shift')S.keys.delete('jog');});
 window.addEventListener('blur',()=>{S.keys.clear();joy=null;});
 function holdSel(shift){selected().forEach(k=>giveOrder({t:'hold',x:k.x,y:k.y},shift,[k]));}
 function setPace(p){S.pace=p;document.querySelectorAll('[data-pace]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pace===p)));}
-function setSpeed(s){S.speed=s;document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.speed===s)));}
-function togglePause(){if(S.over)return;S.paused=!S.paused;syncUI();}
+function setSpeed(s){if(online())s=1;S.speed=s;document.querySelectorAll('[data-speed]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.speed===s)));}
+function togglePause(){if(S.over)return;if(online()){toast('Online is er geen pauze.');return;}S.paused=!S.paused;syncUI();}
 function playerCountdown(){
   if(S.over||S.setup||S.cd||S.role[0]!=='pakkers')return;
+  if(isGuest()){const by=selected().find(k=>!isLoper(k))||S.kids.find(k=>k.team===0&&k.status==='active');netSend({t:'cd',by:by?by.id:null});return;}
   const by=selected().find(k=>!isLoper(k))||S.kids.find(k=>k.team===0&&k.status==='active');
   if(by)startCountdown(by);syncUI();
 }

@@ -117,6 +117,10 @@ kbd{font-family:var(--f-mono);font-size:11px;background:var(--asfalt);border:1px
 .mrow .grp{flex:1 1 0;min-width:0;font-family:var(--f-mono);font-weight:700}
 .mrow .grp.has{border-color:var(--mijn);color:var(--mijn)}
 .tabs{display:none}
+.code{font-family:var(--f-mono);font-size:44px;font-weight:700;letter-spacing:.25em;color:var(--geel)}
+.neterr{color:var(--rood)!important}
+body.online #pauseBtn,body.online [aria-label="Spelsnelheid"],body.online #mPause,body.online #mSpeed,body.online #keysBtn{display:none!important}
+.tbclock{font-family:var(--f-mono);color:var(--geel)}
 .tik{position:absolute;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));
   width:86px;height:86px;border-radius:50%;background:var(--rood);border:3px solid var(--krijt);color:#fff;
   font-family:var(--f-disp);font-size:24px;touch-action:none;-webkit-user-select:none;user-select:none;box-shadow:0 4px 16px rgba(0,0,0,.4)}

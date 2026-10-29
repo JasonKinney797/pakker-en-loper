@@ -12,20 +12,23 @@ function checkSwitch(k){
     case 'near':{const n=nearest(k,known(k));ok=!!(n&&n.d<=v);break;}
     case 'left':ok=S.kids.filter(o=>o.team===lt()&&o.status==='active').length<=v;break;
   }
-  if(ok){k.switched=true;k.ai={since:S.time,side:rand()<.5?-1:1,ph:'out',phT:S.time};log(`<b>${k.name}</b> wordt ${k.role2}.`);}
+  if(ok){k.switched=true;k.ai={since:S.time,side:rand()<.5?-1:1,ph:'out',phT:S.time};logTeam(k.team,`<b>${k.name}</b> wordt ${k.role2}.`);}
 }
+function teamWallX(t){return t===0?myWallX():35-clamp(+S.tp1.wd||3,1,25);}
+function teamBoog(t){return t===0?S.boogHoek:S.tp1.bh;}
 function playerSlot(k,kind){
-  const mine=S.kids.filter(o=>o.team===0&&o.status==='active');
+  const mine=S.kids.filter(o=>o.team===k.team&&o.status==='active');
+  const WX=teamWallX(k.team),BH=teamBoog(k.team);
   const arc=mine.filter(o=>activeRole(o)==='boogman').sort((a,b)=>a.id-b.id);
-  if(kind==='boog'){const sl=arcSlots(arc.length,S.boogHoek,myShift()).sort((a,b)=>a.y-b.y);return sl[arc.indexOf(k)]||{x:myWallX(),y:k.y};}
+  if(kind==='boog'){const sl=arcSlots(arc.length,BH,32-WX).sort((a,b)=>a.y-b.y);return sl[arc.indexOf(k)]||{x:WX,y:k.y};}
   const wall=mine.filter(o=>activeRole(o)==='muur').sort((a,b)=>(a.post?a.post.y:a.id)-(b.post?b.post.y:b.id));
-  const [a,b]=arc.length?(S.boogHoek==='onder'?[.8,19.4]:[5.6,24.2]):[.8,24.2];
-  return wallSlots(wall.length,a,b,myWallX())[wall.indexOf(k)]||{x:myWallX(),y:k.y};
+  const [a,b]=arc.length?(BH==='onder'?[.8,19.4]:[5.6,24.2]):[.8,24.2];
+  return wallSlots(wall.length,a,b,WX)[wall.indexOf(k)]||{x:WX,y:k.y};
 }
 function roleThink(k,r){
   switch(r){
     case 'jager':return hunter(k);
-    case 'bewaker':{const g=S.kids.filter(o=>o.team===0&&o.status==='active'&&activeRole(o)==='bewaker').sort((a,b)=>a.id-b.id);return guard(k,GSPOT[Math.min(1,g.indexOf(k))]);}
+    case 'bewaker':{const g=S.kids.filter(o=>o.team===k.team&&o.status==='active'&&activeRole(o)==='bewaker').sort((a,b)=>a.id-b.id);return guard(k,GSPOT[Math.min(1,g.indexOf(k))]);}
     case 'muur':return wallHold(k,playerSlot(k,'muur'));
     case 'boogman':return wallHold(k,playerSlot(k,'boog'));
     case 'vangnet':return net(k);

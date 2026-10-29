@@ -7,7 +7,7 @@ S.queue=false;S.tab='cmd';
 function setTab(t){S.tab=t;panelEl.querySelectorAll('.box').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   document.querySelectorAll('#tabs [data-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tab===t)));}
 /* de lade pauzeert het spel; sluiten zet het weer verder als de lade het gepauzeerd had */
-function openSheet(){if(!S.paused&&!S.over&&S.started){S.paused=true;S._sheetPaused=true;}panelEl.classList.add('open');syncUI();}
+function openSheet(){if(!S.paused&&!S.over&&S.started&&!online()){S.paused=true;S._sheetPaused=true;}panelEl.classList.add('open');syncUI();}
 function closeSheet(resume){panelEl.classList.remove('open');if(resume&&S._sheetPaused&&!S.over)S.paused=false;S._sheetPaused=false;syncUI();}
 /* na een bevel of formatie uit de lade: lade dicht, spel blijft gepauzeerd zodat je rustig kan kijken of tikken */
 function sheetAfterAction(){if(SHEETQ.matches&&panelEl.classList.contains('open'))closeSheet(false);}
@@ -49,4 +49,5 @@ if(TOUCH){
   const sh=document.querySelector('[data-tab="cmd"] h2 small');if(sh)sh.textContent='Wachtrij-knop onderaan';
   const si=document.getElementById('selInfo');if(si&&!S.started)si.textContent='Tik op een kind van jouw ploeg, of druk lang en sleep een vak. Houd een groepknop (1–5) ingedrukt om je selectie te bewaren.';
 }
+{const m=/^#join-([A-Za-z]{4})$/.exec(location.hash||'');if(m){setNetChoice('join');document.getElementById('joinCode').value=m[1].toUpperCase();}}
 SHEETQ.addEventListener&&SHEETQ.addEventListener('change',()=>{if(!SHEETQ.matches)closeSheet(true);});

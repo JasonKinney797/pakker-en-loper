@@ -153,6 +153,16 @@
     <h1>Pakker <span>En</span> Loper</h1>
     <p>Lopers starten in het kot B en moeten met één loper over lijn C geraken. Pakkers tikken. Na 10 seconden aftellen is B niet meer veilig. Hoogstens twee pakkers binnen 3 meter van B. Alle lopers getikt: punt voor de pakkers en wisselen. Elke ronde begint met opstellen: de ronde start pas als beide ploegen klaar zijn.</p>
     <div class="opt">
+      <span class="lbl">Spel</span>
+      <div class="seg" role="group" aria-label="Spel"><button data-set="net" data-v="off" aria-pressed="true">Tegen de computer</button><button data-set="net" data-v="host">Online: host</button><button data-set="net" data-v="join">Online: meedoen</button></div>
+      <span class="d" id="netD">Jij tegen de computer, met pauze.</span>
+    </div>
+    <div class="opt" id="joinOpt" hidden>
+      <label class="lbl" for="joinCode">Code van je vriend</label>
+      <input id="joinCode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" style="font-family:var(--f-mono);font-size:22px;letter-spacing:.3em;text-transform:uppercase;max-width:9em">
+    </div>
+    <div class="hostopts" id="hostOpts">
+    <div class="opt">
       <span class="lbl">Besturing</span>
       <div class="seg" role="group" aria-label="Besturing"><button data-set="mode" data-v="dyn" aria-pressed="true">Dynamisch</button><button data-set="mode" data-v="rol">Rollen</button></div>
       <span class="d" id="modeD">Geen rollen. Kinderen doen alleen wat je beveelt, plus ontwijken en tikken op korte afstand.</span>
@@ -167,7 +177,20 @@
       <div class="seg" role="group" aria-label="Startrol"><button data-set="start" data-v="lopers" aria-pressed="true">Lopers</button><button data-set="start" data-v="pakkers">Pakkers</button></div>
     </div>
     <p>Een klas van 25 kinderen uit het 6de leerjaar wordt elk spel opnieuw gerold: 13 tegen 12.</p>
+    </div>
+    <p class="neterr" id="netErr" hidden></p>
     <button class="go" id="startBtn">Naar de speelplaats</button>
+  </div>
+</div>
+
+<div class="ov" id="lobbyOv" hidden>
+  <div class="card">
+    <h3>Wachten op je vriend</h3>
+    <p>Geef je vriend deze code, of stuur hem de link. Hij heeft geen account nodig.</p>
+    <div class="code" id="lobbyCode">····</div>
+    <div class="row"><input id="lobbyLink" readonly style="flex:1;min-width:0;font-family:var(--f-mono);font-size:12px"><button id="lobbyCopy">Kopieer link</button></div>
+    <p id="lobbyState">Verbinden met de server…</p>
+    <button id="lobbyCancel">Annuleren</button>
   </div>
 </div>
 
@@ -184,7 +207,7 @@
 
 <div class="ov" id="tbOv" hidden>
   <div class="card">
-    <h3>Tiebreaker</h3>
+    <h3>Tiebreaker <span class="tbclock" id="tbClock"></span></h3>
     <p id="tbText"></p>
     <div class="picks" id="tbPicks"></div>
     <button class="go" id="tbGo" disabled>Start tiebreaker</button>
@@ -236,7 +259,8 @@
 <script src="js/09-geluid.js"></script>
 <script src="js/10-unit-possession.js"></script>
 <script src="js/11-statistieken.js"></script>
-<script src="js/12-mobiel.js"></script>
-<script src="js/13-lus.js"></script>
+<script src="js/12-online.js"></script>
+<script src="js/13-mobiel.js"></script>
+<script src="js/14-lus.js"></script>
 </body>
 </html>

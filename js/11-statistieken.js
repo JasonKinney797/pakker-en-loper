@@ -8,9 +8,9 @@ function statsHTML(team,label,cls){
     ks.map(k=>`<span class="n">${esc(k.name)}</span>${v(k.st.tags)}${v(k.st.got)}${v(k.st.cross)}${v(k.st.miss)}<span class="v r">${k.st.rounds}</span>`).join('')+'</div>';
 }
 function openStats(){
-  if(!S.kids.length)return;
+  if(!S.kids.length)return;if(isHost())sendStats();
   document.getElementById('statsBody').innerHTML=statsHTML(0,'Jouw ploeg','mijn')+statsHTML(1,'Andere ploeg','ander');
-  if(!S.paused&&!S.over&&S.started){S.paused=true;S._statsPaused=true;}
+  if(!S.paused&&!S.over&&S.started&&!online()){S.paused=true;S._statsPaused=true;}
   document.getElementById('statsOv').hidden=false;syncUI();
 }
 function closeStats(){document.getElementById('statsOv').hidden=true;if(S._statsPaused&&!S.over)S.paused=false;S._statsPaused=false;syncUI();}

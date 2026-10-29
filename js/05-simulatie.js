@@ -73,14 +73,15 @@ function tagsAndEnd(){
     if(S.time-(p.lastOK||-9)>=TAG_CD)for(const l of lop){if(tagged.has(l.id)||safe(l))continue;if(hyp(l.x-p.x,l.y-p.y)<=CONTACT){touch=l;break;}}
     if(touch){tagged.set(touch.id,p);p.tagCD=S.time+TAG_CD;p.lastOK=S.time;continue;}
     if(p.ctrl==='mens'){   // je tikt zelf
-      if(S.pos&&S.pos.tagReq){S.pos.tagReq=false;
+      const pq=(S.pos&&S.pos.id===p.id)?S.pos:(S.rpos&&S.rpos.id===p.id)?S.rpos:null;
+      if(pq&&pq.tagReq){pq.tagReq=false;
         if(p.tagCD<=S.time){
           let tb=null,tbd=1e9;
           for(const l of lop){if(tagged.has(l.id)||safe(l))continue;const d=hyp(l.x-p.x,l.y-p.y);if(d<=p.reach&&d<tbd){tbd=d;tb=l;}}
           if(tb){p.tagCD=S.time+TAG_CD;
-            if(rand()<tagProb(p,tb,Math.max(tbd,.01))){tagged.set(tb.id,p);p.lastOK=S.time;buzz(25);}
-            else{S.ev.miss[p.team]++;p.st.miss++;S.floats.push({x:tb.x,y:tb.y,t:S.time,txt:'net niet'});SFX.miss(p.team);}
-          }else S.floats.push({x:p.x,y:p.y,t:S.time,txt:'te ver'});
+            if(rand()<tagProb(p,tb,Math.max(tbd,.01))){tagged.set(tb.id,p);p.lastOK=S.time;if(p.team===0)buzz(25);else netSend({t:'buzz',p:25});}
+            else{S.ev.miss[p.team]++;p.st.miss++;fx(tb,'net niet');sfx('miss',p.team);}
+          }else fx(p,'te ver');
         }}
       continue;
     }
@@ -98,7 +99,7 @@ function tagsAndEnd(){
     p.eKey=null;
     p.tagCD=S.time+TAG_CD;
     if(rand()<tagProb(p,best,Math.max(bd,.01))){tagged.set(best.id,p);p.lastOK=S.time;}
-    else{S.ev.miss[P]++;p.st.miss++;S.floats.push({x:best.x,y:best.y,t:S.time,txt:'net niet'});SFX.miss(p.team);}
+    else{S.ev.miss[P]++;p.st.miss++;fx(best,'net niet');sfx('miss',p.team);}
   }
   const cross=lop.filter(l=>l.x>=CX);
   if(cross.length){
@@ -110,9 +111,10 @@ function tagsAndEnd(){
   for(const [id,p] of tagged){
     const l=S.byId.get(id);l.status='prisoner';l.pIdx=pi++;l.orders=[];l.vx=l.vy=0;
     if(S.pos&&S.pos.id===l.id){buzz([40,40,40]);release(`<b>${l.name}</b> is getikt. Je laat los en stuurt de rest weer van bovenaf.`);}
+    if(S.rpos&&S.rpos.id===l.id){netSend({t:'buzz',p:[40,40,40]});remoteRelease(`<b>${l.name}</b> is getikt. Je laat los en stuurt de rest weer van bovenaf.`);}
     S.ev.tags.push({p:p.name,l:l.name,y:l.y,t:S.rt,pt:p.team});
-    p.st.tags++;l.st.got++;SFX.tag(p.team);
-    S.floats.push({x:l.x,y:l.y,t:S.time,txt:'getikt'});
+    p.st.tags++;l.st.got++;sfx('tag',p.team);
+    fx(l,'getikt');
     if(l.team===0)S.sel.delete(l.id);
   }
   if(tagged.size&&lop.every(l=>tagged.has(l.id)))endRound('pakkers');
@@ -134,16 +136,17 @@ function endRound(winner,crosser){
   if(isAI(L))recordBoog(L);
   learnRound(winner);
   S.pendingSwap=winner==='pakkers';
-  SFX.point(wt===0);
+  SFX.point(wt===0);if(isHost())netSend({t:'sfx',n:'point',a:wt===1});
   for(const k of S.kids)if(k.status!=='bench')k.st.rounds++;
   const who=wt===0?'jouw ploeg':'de andere ploeg';
-  log(winner==='lopers'?`<b>${crosser.name}</b> is over C bij ${zoneOf(crosser.y)}. Punt voor ${who}.`:`Alle lopers getikt. Punt voor ${who}.`);
+  const msg=w=>winner==='lopers'?`<b>${crosser.name}</b> is over C bij ${zoneOf(crosser.y)}. Punt voor ${w}.`:`Alle lopers getikt. Punt voor ${w}.`;
+  say(msg(who),msg(wt===1?'jouw ploeg':'de andere ploeg'));
   showReport(winner,wt,wasTb);
 }
 function tie(l,p){
   S.over=true;
-  log(`<b>${l.name}</b> raakt over C op hetzelfde moment dat ${p?p.name:'een pakker'} hem tikt. <b>Tiebreaker!</b>`);
-  showTiebreak();
+  say(`<b>${l.name}</b> raakt over C op hetzelfde moment dat ${p?p.name:'een pakker'} hem tikt. <b>Tiebreaker!</b>`);
+  if(online())onlineTiebreak();else showTiebreak();
 }
 
 /* ---------- Simulatiestap ---------- */
@@ -152,10 +155,10 @@ function cpuReady(T){
   if(S.role[T]==='lopers'||S.setupT>20)return true;
   return S.kids.every(k=>k.team!==T||k.status!=='active'||hyp(k.vx,k.vy)<.4||(k.intent&&hyp(k.intent.x-k.x,k.intent.y-k.y)<1));
 }
-function playerReady(){if(!S.setup||S.ready[0]||S.over)return;S.ready[0]=true;log('Jouw ploeg is <b>klaar</b>.');syncUI();}
+function playerReady(){if(!S.setup||S.ready[0]||S.over)return;if(isGuest()){netSend({t:'ready'});return;}S.ready[0]=true;say('Jouw ploeg is <b>klaar</b>.','De andere ploeg is <b>klaar</b>.');syncUI();}
 function step(dt){
   if(S.over)return;
-  applyPossession();
+  applyPossession();applyRemote();
   S.time+=dt;
   if(S.setup){
     S.setupT+=dt;
@@ -164,14 +167,15 @@ function step(dt){
     for(const k of S.kids)if(k.status==='active')move(k,dt);
     physics();
     if(S.auto0&&!S.ready[0]&&cpuReady(0))S.ready[0]=true;
-    if(!S.ready[1]&&cpuReady(1)){S.ready[1]=true;log('De andere ploeg is <b>klaar</b>.');}
-    if(S.ready[0]&&S.ready[1]){S.setup=false;log('<b>Start!</b> Beide ploegen staan klaar.');SFX.whistle();}
+    if(!S.ready[1]&&isAI(1)&&cpuReady(1)){S.ready[1]=true;say('De andere ploeg is <b>klaar</b>.','Jouw ploeg is <b>klaar</b>.');}
+    if(online()&&S.setupT>=SETUP_MAX&&!(S.ready[0]&&S.ready[1])){S.ready=[true,true];say(`${SETUP_MAX} seconden opstellen zijn om: de ronde start.`);}
+    if(S.ready[0]&&S.ready[1]){S.setup=false;say('<b>Start!</b> Beide ploegen staan klaar.');sfx('whistle');}
     return;
   }
   S.rt+=dt;
   if(S.tb){S.tb.clock-=dt;if(S.tb.clock<=0)return tbTimeout();}
   else{S.block-=dt;if(S.block<=0)return blockTimeout();}
-  if(S.cd&&!S.cdDone){const pc=Math.ceil(S.cd.left);S.cd.left-=dt;const nc=Math.ceil(S.cd.left);if(nc!==pc&&nc>0)SFX.beep(false);if(S.cd.left<=0)SFX.beep(true);if(S.cd.left<=0){S.cdDone=true;log('Aftellen klaar: <b>B is niet meer veilig</b>.');}}
+  if(S.cd&&!S.cdDone){const pc=Math.ceil(S.cd.left);S.cd.left-=dt;const nc=Math.ceil(S.cd.left);if(nc!==pc&&nc>0)sfx('beep',false);if(S.cd.left<=0)sfx('beep',true);if(S.cd.left<=0){S.cdDone=true;say('Aftellen klaar: <b>B is niet meer veilig</b>.');}}
   S.percT-=dt;if(S.percT<=0){S.percT=.1;perceive();}
   S.capT-=dt;if(S.capT<=0){S.capT=.1;captain();observe();}
   for(const k of S.kids){k.thinkT-=dt;if(k.thinkT<=0){k.thinkT+=.1;think(k);}}
@@ -182,11 +186,11 @@ function step(dt){
 }
 function tbTimeout(){
   S.over=true;S.tb=null;S.pendingSwap=false;
-  log('Tiebreaker: <b>3 minuten om</b>, geen beslissing. Gewone ronde, zelfde rollen.');
+  say('Tiebreaker: <b>3 minuten om</b>, geen beslissing. Gewone ronde, zelfde rollen.');
   showInfoReport('Tiebreaker zonder beslissing','De 3 minuten zijn om zonder punt. Er volgt een gewone ronde met dezelfde rollen.');
 }
 function blockTimeout(){
   S.over=true;S.pendingSwap=true;
-  log('<b>10 minuten om</b>: er wordt gewisseld.');
+  say('<b>10 minuten om</b>: er wordt gewisseld.');
   showInfoReport('10 minuten om','De pakkers hebben in deze 10 minuten niet alle lopers getikt. Er wordt gewisseld zonder punt.');
 }

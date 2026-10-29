@@ -128,7 +128,7 @@ function draw(){
   else if(S.pos&&TOUCH&&!S.paused&&!S.over){ctx.strokeStyle='rgba(238,236,226,.18)';ctx.setLineDash([5,5]);ctx.lineWidth=2;
     ctx.beginPath();ctx.arc(70,VH-80,JOY_R,0,7);ctx.stroke();ctx.setLineDash([]);
     ctx.fillStyle='rgba(238,236,226,.35)';ctx.font=`12px ${css.getPropertyValue('--f-body')}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('duim hier',70,VH-80);}
-  if(S.setup){const fs=clamp(Math.min(VW,VH)/20,13,26),msg=S.ready[0]?'Wachten op de andere ploeg':'Opstellen · druk op Klaar';
+  if(S.setup){const fs=clamp(Math.min(VW,VH)/20,13,26),msg=(S.ready[0]?'Wachten op de andere ploeg':'Opstellen · druk op Klaar')+(online()?` · ${Math.max(0,Math.ceil(SETUP_MAX-(S.setupT||0)))} s`:'');
     ctx.font=`${fs}px ${css.getPropertyValue('--f-disp')}`;ctx.textAlign='center';ctx.textBaseline='middle';
     const tw=ctx.measureText(msg).width;ctx.fillStyle='rgba(31,36,39,.82)';ctx.beginPath();
     if(ctx.roundRect)ctx.roundRect(VW/2-tw/2-12,8,tw+24,fs+14,8);else ctx.rect(VW/2-tw/2-12,8,tw+24,fs+14);ctx.fill();

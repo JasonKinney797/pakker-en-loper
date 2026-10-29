@@ -14,7 +14,7 @@ function canSee(a,b){
   return true;
 }
 function perceive(){
-  S.vis0.clear();
+  S.vis0.clear();S.vis1.clear();
   const act=active();
   for(const a of act){
     if(a.ctrl!=='mens'&&S.time>=a.nextScan){const L=lv(a);a.scanUntil=S.time+.35;a.nextScan=S.time+L.scan*(.85+rand()*.3);}
@@ -26,6 +26,7 @@ function perceive(){
       const first=cont?m.first:S.time, fd=cont?m.fd:hyp(b.x-a.x,b.y-a.y);
       a.mem.set(b.id,{x:b.x,y:b.y,vx:b.vx,vy:b.vy,t:S.time,first,fd});
       if(a.team===0&&(!S.pos||a.id===S.pos.id)){S.vis0.add(b.id);S.ghost.set(b.id,{x:b.x,y:b.y,t:S.time});}
+      else if(a.team===1&&isHost()&&(!S.rpos||a.id===S.rpos.id))S.vis1.add(b.id);
     }
   }
 }
@@ -145,7 +146,7 @@ function sneak(k){
 
 function callHelp(k){
   const c={team:k.team,x:k.x,y:k.y,t:S.time,name:k.name};
-  S.calls.push(c);S.pings.push({x:k.x,y:k.y,t:S.time,team:k.team});if(k.team===0)SFX.help();
+  S.calls.push(c);if(k.team===0){S.pings.push({x:k.x,y:k.y,t:S.time,team:k.team});SFX.help();}
   for(const h of S.kids){
     if(h.team!==k.team||h.status!=='active')continue;
     const isJ=isAI(h.team)?h.ai.role==='jager':(activeRole(h)==='jager');
@@ -155,6 +156,7 @@ function callHelp(k){
     h.ai.call={x:c.x,y:c.y,t:S.time+delay,until:S.time+delay+6};
   }
   if(k.team===0)toast(`${k.name} roept om hulp bij ${zoneOf(k.y)}.`);
+  else if(isHost()){netSend({t:'toast',m:`${k.name} roept om hulp bij ${zoneOf(k.y)}.`});netSend({t:'ping',x:k.x,y:k.y});netSend({t:'sfx',n:'help'});}
 }
 function hunter(k){
   const L=lv(k);const ks=known(k).filter(e=>!safe(e.o));
@@ -178,7 +180,7 @@ function hunter(k){
   k.look=Math.PI;
 }
 const STEP={slim:1.8,boven:1.8,gem:2.0,onder:2.4,dom:3.0,perfect:1.8};   // 2 à 3 stapjes, dom loopt te ver mee
-function lvKey(k){return (k.team===0&&!S.set.realism)?'perfect':k.level;}
+function lvKey(k){return (!isAI(k.team)&&!S.set.realism)?'perfect':k.level;}
 function wallHold(k,slot){
   const L=lv(k);const ks=known(k,true).filter(e=>!safe(e.o));
   const n=nearest(k,ks);
@@ -329,5 +331,5 @@ function captainT(T){
 function startCountdown(by){
   if(S.cd)return;
   S.cd={left:10,by:by.name};S.ev.cdBy=by.name;S.ev.cdAt=S.rt;
-  log(`<b>${by.name}</b> begint af te tellen.`);
+  say(`<b>${by.name}</b> begint af te tellen.`);
 }

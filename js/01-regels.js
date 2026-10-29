@@ -51,10 +51,16 @@ try{S.reportsOff=localStorage.getItem('pel-rep-off')==='1';}catch(e){}
 
 const lt=()=>S.role[0]==='lopers'?0:1;   // team dat loopt
 const isLoper=k=>S.role[k.team]==='lopers';
-function lv(k){return (k.team===0&&!S.set.realism)?LV.perfect:LV[k.level];}
+function lv(k){return (!isAI(k.team)&&!S.set.realism)?LV.perfect:LV[k.level];}
 const active=()=>S.kids.filter(k=>k.status==='active');
-const isAI=t=>t===1||S.auto0;                 // auto0: ook jouw ploeg door de computer (alleen voor tests)
-const aiTeams=()=>S.auto0?[1,0]:[1];
+/* ---- online: wie bestuurt welke ploeg ----
+   NET.mode: 'off' (tegen de computer), 'host' (jouw browser rekent het spel uit), 'guest' (je vriend) */
+const NET={mode:'off',conn:null,peer:null,bc:null,code:'',lastRx:0,guestGone:false,sendT:0,inT:0,lastIn:'',base:{},nextAt:0,hbT:0,joined:false};
+const online=()=>NET.mode!=='off';
+const isGuest=()=>NET.mode==='guest';
+const isHost=()=>NET.mode==='host';
+const isAI=t=>t===1?!(isHost()&&!NET.guestGone):!!S.auto0;   // auto0: ook jouw ploeg door de computer (alleen voor tests)
+const aiTeams=()=>[0,1].filter(isAI);
 
 function rollKid(id,name,team){
   const top=clamp(gauss(6.2,.45),5,7.3), z=(top-6.2)/.45;
@@ -64,7 +70,7 @@ function rollKid(id,name,team){
     stam:clamp(gauss(11.5,1.8),8,15),
     react:clamp(gauss(.35,.05),.25,.45),
     reach:1.1+rand()*.1,
-    level:wpick(team===1?LV_ROLL_CPU:LV_ROLL),
+    level:wpick(team===1&&!online()?LV_ROLL_CPU:LV_ROLL),
     x:0,y:0,vx:0,vy:0,px:0,py:0,face:0,energy:1,tired:false,status:'active',
     orders:[],role:'',role2:'',cond:'cd',condVal:0,switched:false,post:null,
     mem:new Map(),tagCD:0,lastTurn:-9,nextScan:rand()*2,scanUntil:0,intent:null,look:null,
@@ -80,10 +86,11 @@ function newGame(){
   names.forEach((n,i)=>{const team=i<13?big:1-big;const k=rollKid(i,n,team);S.kids.push(k);S.byId.set(i,k);});
   S.role=[S.set.start,S.set.start==='lopers'?'pakkers':'lopers'];
   S.score=[0,0];S.block=600;S.round=0;S.tb=null;S.learn=[newLearn(),newLearn()];S.hists=[{lScoresY:[],boogSeen:[]},{lScoresY:[],boogSeen:[]}];
-  if(S.pos)release(null);S.sel.clear();S.groups={};S.time=0;
+  if(S.pos)release(null);if(S.rpos)remoteRelease(null);S.sel.clear();S.groups={};S.time=0;
   logClear();
   applyDefaultRoles();
-  log(`Nieuwe klas gerold. Jouw ploeg telt <b>${S.kids.filter(k=>k.team===0).length}</b> kinderen, de andere <b>${S.kids.filter(k=>k.team===1).length}</b>.`);
+  const n0=S.kids.filter(k=>k.team===0).length,n1=S.kids.filter(k=>k.team===1).length;
+  say(`Nieuwe klas gerold. Jouw ploeg telt <b>${n0}</b> kinderen, de andere <b>${n1}</b>.`,`Nieuwe klas gerold. Jouw ploeg telt <b>${n1}</b> kinderen, de andere <b>${n0}</b>.`);
   startRound();
   S.paused=false;
   buildRoster();syncUI();
@@ -92,8 +99,9 @@ function newGame(){
 function applyDefaultRoles(){
   for(const k of S.kids){k.role='';k.role2='';k.switched=false;k.ai={};}
   if(S.set.mode!=='rol')return;
-  const mine=S.kids.filter(k=>k.team===0).sort((a,b)=>b.top-a.top);
-  if(S.role[0]==='pakkers'){mine.forEach((k,i)=>{k.role=i===0?'jager':'muur';});}
+  for(const t of [0,1]){if(isAI(t))continue;
+    const mine=S.kids.filter(k=>k.team===t).sort((a,b)=>b.top-a.top);
+    if(S.role[t]==='pakkers'){mine.forEach((k,i)=>{k.role=i===0?'jager':'muur';});}}
 }
 
 function startRound(){
@@ -120,10 +128,11 @@ function startRound(){
   for(const id of [...S.sel]){const k=S.byId.get(id);if(!k||k.status!=='active')S.sel.delete(id);}
   planAI();
   const lbl=S.tb?'Tiebreaker':'Ronde '+S.round;
-  log(`<b>${lbl}</b>: opstellen. Jouw ploeg ${S.role[0]==='lopers'?'loopt':'pakt'}. Druk op Klaar als je klaarstaat.`);
+  const rl=t=>`<b>${lbl}</b>: opstellen. Jouw ploeg ${S.role[t]==='lopers'?'loopt':'pakt'}. Druk op Klaar als je klaarstaat.`;
+  say(rl(0),rl(1));
 }
 
 function swapRoles(){
   S.role=[S.role[1],S.role[0]];S.block=600;applyDefaultRoles();
-  log(`Wissel: jouw ploeg is nu <b>${S.role[0]}</b>.`);
+  say(`Wissel: jouw ploeg is nu <b>${S.role[0]}</b>.`,`Wissel: jouw ploeg is nu <b>${S.role[1]}</b>.`);
 }
