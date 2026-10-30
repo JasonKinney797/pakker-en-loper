@@ -4,11 +4,11 @@ const SFX=(()=>{
   let ac=null,on=true;
   try{on=localStorage.getItem('pel-sound')!=='0';}catch(e){}
   function ctx(){if(!on)return null;if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}}if(ac.state==='suspended')ac.resume();return ac;}
-  function tone(f,dur,type,vol,when,f2){const a=ctx();if(!a)return;const t=a.currentTime+(when||0);
+  function tone(f,dur,type,vol,when,f2){if(S.demo)return;const a=ctx();if(!a)return;const t=a.currentTime+(when||0);
     const o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);
     g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||.15,t+.012);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
     o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur+.02);}
-  function noise(dur,vol,hp){const a=ctx();if(!a)return;const t=a.currentTime;const b=a.createBuffer(1,Math.floor(a.sampleRate*dur),a.sampleRate);const d=b.getChannelData(0);
+  function noise(dur,vol,hp){if(S.demo)return;const a=ctx();if(!a)return;const t=a.currentTime;const b=a.createBuffer(1,Math.floor(a.sampleRate*dur),a.sampleRate);const d=b.getChannelData(0);
     for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);const s=a.createBufferSource();s.buffer=b;const f=a.createBiquadFilter();f.type='highpass';f.frequency.value=hp||1200;
     const g=a.createGain();g.gain.value=vol||.08;s.connect(f).connect(g).connect(a.destination);s.start(t);}
   let lastTag=0;

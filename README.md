@@ -42,6 +42,11 @@ De verbinding loopt rechtstreeks tussen jullie browsers (WebRTC via PeerJS). Op 
 - `js/12-online.js`: online spelen tegen een vriend (PeerJS)
 - `js/13-oefenen.js`: de rondleiding voor nieuwe spelers
 - `js/14-mobiel.js`: knoppen en lade op gsm en tablet
-- `js/15-lus.js`: de lus die alles 60 keer per seconde laat lopen
+- `js/15-nieuwe-look.js`: de nieuwe look: scorebord, actiebalk, bevelwiel, banners, herhaling, menudemo
+- `js/16-lus.js`: de lus die alles 60 keer per seconde laat lopen
+
+## Nieuwe of klassieke look
+
+In het menu kies je bij **Look** tussen *Nieuw* en *Klassiek* (ook via het menu linksboven tijdens het spel). De volledige versie van voor de nieuwe look staat in de tak `voor-revamp`.
 
 De bestanden worden in deze volgorde geladen. Ze delen hun variabelen, dus de volgorde in `index.html` niet veranderen.

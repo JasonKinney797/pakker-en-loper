@@ -256,6 +256,7 @@ function guestHandle(m){
     case 'tb':openPicker(0,m.n,performance.now()+m.ms,ids=>netSend({t:'tbpick',ids}));break;
     case 'end':renderEnd(m.d,false);break;
     case 'feed':feedShow(m.x,m.c);break;
+    case 'bn':banner(m.x,m.c);break;
     case 'msg':chatShow(m.i,false);break;
     case 'tbclose':document.getElementById('tbOv').hidden=true;S.pickUntil=0;break;
     case 'full':netErr('Dit spel heeft al een tweede speler.');netLeave();break;

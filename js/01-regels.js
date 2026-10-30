@@ -91,7 +91,7 @@ function newGame(keep){
       if(S.tut&&team===1)k.level='dom';
       S.kids.push(k);S.byId.set(i,k);});
   }
-  S.bell=S.set.bell?S.set.bell*60:0;S.ended=false;S.marks=[];S.bellWarn=0;
+  S.bell=S.set.bell?S.set.bell*60:0;S.ended=false;S.marks=[];S.bellWarn=0;S.replay=null;S.edge=[];if(S.rp)endReplay();
   S.role=[S.set.start,S.set.start==='lopers'?'pakkers':'lopers'];
   S.score=[0,0];S.block=600;S.round=0;S.tb=null;S.learn=[newLearn(),newLearn()];S.hists=[{lScoresY:[],boogSeen:[]},{lScoresY:[],boogSeen:[]}];
   if(S.pos)release(null);if(S.rpos)remoteRelease(null);S.sel.clear();S.groups={};S.time=0;
@@ -114,7 +114,7 @@ function applyDefaultRoles(){
 }
 
 function startRound(){
-  S.round++;S.rt=0;S.cd=null;S.cdDone=false;S.over=false;S.setup=true;S.setupT=0;S.ready=[false,false];S._nG=0;S.calls=[];S.floats=[];S.pings=[];
+  S.round++;S.rt=0;S.cd=null;S.cdDone=false;S.over=false;S.rec=[];S.recT=0;S.setup=true;S.setupT=0;S.ready=[false,false];S._nG=0;S.calls=[];S.floats=[];S.pings=[];
   S.ghost.clear();S.vis0.clear();
   S.plans=[null,null];S.ev={hov:[null,null],lures:[0,0],obsMassa:[null,null],key:['',''],tags:[],miss:[0,0],cross:null,tac:['',''],cdBy:null,cdAt:null,startClock:S.time};
   const L=lt(),P=1-L;
@@ -139,6 +139,7 @@ function startRound(){
   const lbl=S.tb?'Tiebreaker':'Ronde '+S.round;
   const rl=t=>`<b>${lbl}</b>: opstellen. Jouw ploeg ${S.role[t]==='lopers'?'loopt':'pakt'}.${S.watch?'':' Druk op Klaar als je klaarstaat.'}`;
   say(rl(0),rl(1));
+  bannerAll(S.tb?'Tiebreaker':`Ronde ${S.round}`,'mg');
 }
 
 function swapRoles(){

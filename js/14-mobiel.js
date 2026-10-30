@@ -10,7 +10,7 @@ function setTab(t){S.tab=t;panelEl.querySelectorAll('.box').forEach(b=>b.classLi
 function openSheet(){if(!S.paused&&!S.over&&S.started&&!online()){S.paused=true;S._sheetPaused=true;}panelEl.classList.add('open');syncUI();}
 function closeSheet(resume){panelEl.classList.remove('open');if(resume&&S._sheetPaused&&!S.over)S.paused=false;S._sheetPaused=false;syncUI();}
 /* na een bevel of formatie uit de lade: lade dicht, spel blijft gepauzeerd zodat je rustig kan kijken of tikken */
-function sheetAfterAction(){if(SHEETQ.matches&&panelEl.classList.contains('open'))closeSheet(false);}
+function sheetAfterAction(){if((SHEETQ.matches||NL())&&panelEl.classList.contains('open'))closeSheet(false);}
 document.querySelectorAll('#tabs [data-tab]').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
 document.getElementById('sheetClose').addEventListener('click',()=>closeSheet(true));
 document.getElementById('mPanel').addEventListener('click',()=>panelEl.classList.contains('open')?closeSheet(true):openSheet());
@@ -50,4 +50,4 @@ if(TOUCH){
   const si=document.getElementById('selInfo');if(si&&!S.started)si.textContent='Tik op een kind van jouw ploeg, of druk lang en sleep een vak. Houd een groepknop (1–5) ingedrukt om je selectie te bewaren.';
 }
 {const m=/^#join-([A-Za-z]{4})$/.exec(location.hash||'');if(m){setNetChoice('join');document.getElementById('joinCode').value=m[1].toUpperCase();}}
-SHEETQ.addEventListener&&SHEETQ.addEventListener('change',()=>{if(!SHEETQ.matches)closeSheet(true);});
+SHEETQ.addEventListener&&SHEETQ.addEventListener('change',()=>{if(!SHEETQ.matches&&!NL())closeSheet(true);});

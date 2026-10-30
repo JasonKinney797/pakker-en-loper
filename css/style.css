@@ -211,4 +211,189 @@ body.watch [data-speed="4"]{display:inline-block}
   .mrow button{min-height:34px;padding:5px 4px}
   .panel{height:88%;max-height:88%}
 }
+
+/* ================= NIEUWE LOOK (html.nl) =================
+   Modern tactiekscherm: het veld is het hele scherm, met een scorebord bovenaan,
+   één actiebalk onderaan en een lade voor de rest. */
+html.nl{
+  --asfalt:#0d1117; --asfalt-2:#0a0e14; --paneel:#151b24; --paneel-2:#1c2430; --rand:#283244;
+  --krijt:#e9eef5; --krijt-dim:#8f9bad; --krijt-zwak:#5c6778;
+  --mijn:#38bdf8; --ander:#fb7a50; --geel:#ffd23f; --rood:#f05252; --groen:#4ade80;
+  --glas:rgba(13,17,23,.9);
+  --f-disp:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+html.nl body{padding:0;font-size:14.5px}
+html.nl .bar{display:none}
+html.nl .mbar{display:none!important}
+html.nl .layout{grid-template-columns:minmax(0,1fr);gap:0}
+html.nl .col{gap:0}
+html.nl .stage{border-radius:0;background:var(--asfalt-2)}
+html.nl button{border-radius:9px;font-weight:500}
+html.nl button[aria-pressed="true"]{background:var(--krijt);color:#0d1117;border-color:var(--krijt)}
+html.nl .card{border-radius:16px;background:var(--paneel)}
+html.nl .card h3,html.nl .box h2{font-weight:600;letter-spacing:.01em}
+html.nl .go{font-weight:700;letter-spacing:.02em;border-radius:12px}
+html.nl kbd{background:transparent}
+.hud{display:none}
+html:not(.nl) #repReplay{display:none}
+html.nl .hud{display:block;position:absolute;inset:0;pointer-events:none;z-index:4}
+html.nl .hud>*{pointer-events:auto}
+html.nl .hud *,html.nl .hud{box-sizing:border-box}
+html.nl .ov.menu{backdrop-filter:none}
+.sb{min-width:0;flex:0 1 auto}
+.hud-top{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));right:calc(10px + env(safe-area-inset-right,0px));
+  display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none}
+.hud-top>*{pointer-events:auto}
+.hgrp{display:flex;gap:6px}
+.hb{width:42px;height:42px;border-radius:11px;background:var(--glas);border:1px solid var(--rand);display:grid;place-items:center;padding:0;font-size:15px;font-weight:700;backdrop-filter:blur(8px)}
+.hb svg{width:18px;height:18px;fill:currentColor}
+/* scorebord */
+.sb{display:flex;align-items:stretch;background:var(--glas);border:1px solid var(--rand);border-radius:13px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.35);backdrop-filter:blur(8px)}
+.sbt{display:flex;align-items:center;gap:10px;padding:5px 14px}
+.sbt b{font-family:var(--f-disp);font-size:32px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.sb0{box-shadow:inset 4px 0 0 var(--mijn)} .sb0 b{color:var(--mijn)}
+.sb1{box-shadow:inset -4px 0 0 var(--ander);flex-direction:row-reverse;text-align:right} .sb1 b{color:var(--ander)}
+.sbn{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.sbn span:first-child{font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.sbn span:last-child{font-size:11.5px;color:var(--krijt-dim)}
+.sbm{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 14px;background:rgba(255,255,255,.035);min-width:100px}
+#sbClock{font-family:var(--f-disp);font-size:24px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+#sbPhase{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--krijt-dim);white-space:nowrap}
+#sbPhase.warn{color:var(--geel)} #sbPhase.hot{color:var(--rood)} #sbClock.hot{color:var(--rood)}
+/* actiebalk */
+.dock{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;align-items:center;
+  background:var(--glas);border:1px solid var(--rand);border-radius:15px;padding:6px;max-width:calc(100% - 20px);overflow-x:auto;scrollbar-width:none;backdrop-filter:blur(8px);box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.dock::-webkit-scrollbar{display:none}
+.dock button{height:44px;padding:0 14px;white-space:nowrap;font-weight:600;flex-shrink:0;background:var(--paneel-2)}
+.dock .pri{background:var(--geel);color:#1a1405;border-color:var(--geel);font-size:16px;padding:0 22px;font-weight:700}
+.dock .pri:disabled{background:var(--paneel-2);color:var(--krijt-dim);border-color:var(--rand);opacity:1}
+.dock .sep{width:1px;height:28px;background:var(--rand);flex-shrink:0}
+.dock kbd{display:none}
+.dock button{display:inline-flex;align-items:center;gap:7px}
+.dock button svg{width:18px;height:18px;flex-shrink:0;fill:currentColor}
+/* groepen aan de rand */
+.grail{position:absolute;left:calc(10px + env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
+.grail button{width:40px;height:40px;padding:0;font-family:var(--f-disp);font-size:18px;font-weight:700;background:var(--glas);backdrop-filter:blur(8px);position:relative}
+.grail button.has{border-color:var(--mijn);color:var(--mijn)}
+.grail button small{position:absolute;right:-5px;top:-5px;font:600 10px var(--f-body);background:var(--mijn);color:#0d1117;border-radius:999px;padding:1px 5px}
+html.nl body.watch .grail{display:none}
+/* kaart van de selectie */
+.selcard{position:absolute;left:calc(60px + env(safe-area-inset-left,0px));bottom:calc(74px + env(safe-area-inset-bottom,0px));width:min(310px,calc(100% - 80px));
+  background:var(--glas);border:1px solid var(--rand);border-radius:13px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;backdrop-filter:blur(8px)}
+.selcard .sh{display:flex;align-items:center;gap:8px;min-width:0}
+.selcard .sh b{font-family:var(--f-disp);font-size:20px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.selcard .sh .x{margin-left:auto;width:30px;height:30px;padding:0;flex-shrink:0}
+.selcard .tag{font-size:11.5px;color:var(--krijt-dim);text-transform:uppercase;letter-spacing:.06em}
+.selcard .nums{display:flex;gap:14px;font-size:12.5px;color:var(--krijt-dim)}
+.selcard .nums b{color:var(--krijt);font-family:var(--f-mono);font-weight:500;font-size:12.5px}
+.selcard .acts{display:flex;flex-wrap:wrap;gap:5px}
+.selcard .acts button{height:34px;padding:0 10px;font-size:13px}
+.selcard .bar2{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.selcard .bar2 i{display:block;height:100%;background:var(--groen)}
+.selcard .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+/* bevelwiel */
+.wheel{position:absolute;width:0;height:0;z-index:6}
+.wheel button{position:absolute;transform:translate(-50%,-50%) scale(.6);opacity:0;min-width:96px;height:40px;border-radius:20px;background:rgba(13,17,23,.96);
+  border:1px solid var(--rand);font-weight:600;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.4);transition:transform .14s ease,opacity .14s ease}
+.wheel.open button{transform:translate(-50%,-50%) scale(1);opacity:1}
+.wheel button:hover{border-color:var(--geel);color:var(--geel)}
+.wheel .wc{min-width:0;width:34px;height:34px;padding:0;border-radius:50%;color:var(--krijt-dim)}
+.wheel .wt{position:absolute;transform:translate(-50%,-50%);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--krijt-dim);white-space:nowrap;pointer-events:none}
+/* hoofdmenu-knop */
+.hmenu{position:absolute;top:calc(60px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:2px;
+  background:rgba(13,17,23,.97);border:1px solid var(--rand);border-radius:13px;padding:6px;min-width:220px;z-index:7;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.hmenu button{background:transparent;border-color:transparent;text-align:left;padding:9px 12px;display:flex;justify-content:space-between;gap:10px}
+.hmenu button:hover{background:var(--paneel-2)}
+.hmenu button[aria-pressed]{background:transparent;color:var(--krijt)}
+.hmenu button[aria-pressed="true"]::after{content:"aan";color:var(--groen);font-size:12px}
+.hmenu button[aria-pressed="false"]::after{content:"uit";color:var(--krijt-zwak);font-size:12px}
+html.nl body:not(.online) [data-hm="msg"]{display:none}
+html.nl body.online #hPause,html.nl body.online #hSpeed{display:none}
+/* fase-banner */
+.pban{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-family:var(--f-disp);font-weight:700;font-size:clamp(30px,7vw,72px);letter-spacing:.02em;
+  text-transform:uppercase;opacity:0;pointer-events:none;white-space:nowrap;text-shadow:0 6px 30px rgba(0,0,0,.7);color:var(--krijt)}
+.pban.m0{color:var(--mijn)} .pban.m1{color:var(--ander)} .pban.mg{color:var(--geel)} .pban.hot{color:var(--rood)}
+.pban.show{animation:pban 1.7s ease forwards}
+@keyframes pban{0%{opacity:0;transform:translate(-50%,-50%) scale(.82)}12%{opacity:1;transform:translate(-50%,-50%) scale(1)}72%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}
+@media (prefers-reduced-motion:reduce){.pban.show{animation:pbanr 1.7s steps(1) forwards}@keyframes pbanr{0%{opacity:1}100%{opacity:0}}.wheel button{transition:none}}
+/* herhaling */
+.rpbar{position:absolute;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:var(--glas);border:1px solid var(--geel);
+  border-radius:999px;padding:5px 6px 5px 14px;font-weight:600;color:var(--geel);letter-spacing:.06em;text-transform:uppercase;font-size:12.5px}
+.rpbar button{height:30px;padding:0 12px;border-radius:999px;text-transform:none;letter-spacing:0}
+/* bestaande overlays in de nieuwe look */
+html.nl .stagetl{top:calc(62px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px))}
+html.nl .feed{top:calc(70px + env(safe-area-inset-top,0px))}
+html.nl .feed div{background:var(--glas);font-weight:500}
+html.nl .cmdhint{bottom:calc(74px + env(safe-area-inset-bottom,0px));border-color:var(--geel);background:var(--glas)}
+html.nl .msgs{bottom:calc(74px + env(safe-area-inset-bottom,0px));background:var(--glas)}
+html.nl .tik{bottom:calc(80px + env(safe-area-inset-bottom,0px));background:var(--rood);border-color:#fff;font-family:var(--f-disp);font-weight:700}
+html.nl .toast{background:var(--glas);border-color:var(--rand);color:var(--krijt)}
+html.nl .tut{background:var(--glas);backdrop-filter:blur(8px)}
+html.nl .tut b{font-weight:600}
+/* lade */
+html.nl .panel{position:fixed;top:0;right:0;bottom:0;left:auto;width:min(400px,100%);height:auto;max-height:none;z-index:15;background:rgba(13,17,23,.97);
+  border-left:1px solid var(--rand);border-top:0;border-radius:0;padding:12px max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) 14px;
+  transform:translateX(105%);transition:transform .24s ease;box-shadow:-10px 0 40px rgba(0,0,0,.45);overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+html.nl .panel.open{transform:none}
+html.nl .tabs{display:flex;flex-wrap:wrap;gap:4px;padding-bottom:4px;position:sticky;top:0;background:rgba(13,17,23,.97);z-index:1;flex-shrink:0}
+html.nl .tabs button{white-space:nowrap;padding:7px 10px;font-size:13px}
+html.nl .tabs .close{margin-left:auto;background:var(--krijt);color:#0d1117;border-color:var(--krijt)}
+html.nl .panel .box:not(.on){display:none}
+html.nl .box{background:transparent;border:0;padding:4px 2px}
+html.nl .log{max-height:none}
+/* menu: het veld blijft zichtbaar */
+html.nl .ov.menu{background:linear-gradient(90deg,rgba(10,14,20,.94) 0%,rgba(10,14,20,.72) 55%,rgba(10,14,20,.45) 100%)}
+html.nl .menucard{background:transparent;border:0;box-shadow:none;max-width:980px}
+html.nl .mtitle{font-weight:700;font-size:clamp(46px,7vw,84px);letter-spacing:-.01em;line-height:.88;text-transform:uppercase}
+html.nl .mode{background:rgba(21,27,36,.85);border-color:var(--rand);padding:12px 16px}
+html.nl .mode b{font-weight:600;font-size:21px;letter-spacing:.01em}
+html.nl .mode[aria-pressed="true"]{background:var(--geel);border-color:var(--geel);color:#1a1405}
+html.nl .mright{background:rgba(21,27,36,.88);border:1px solid var(--rand);border-radius:16px;padding:18px;backdrop-filter:blur(8px)}
+html.nl .ov{background:rgba(8,11,16,.72);backdrop-filter:blur(3px)}
+html.nl .ebell{font-weight:700;text-transform:uppercase}
+html.nl .escore{font-weight:700}
+@media (max-width:760px){
+  html.nl .ov.menu{background:rgba(10,14,20,.86)}
+  html.nl .mright{padding:14px}
+}
+@media (max-width:1000px){
+  .dock button:has(svg)>span{display:none}
+  .dock button:has(svg){width:44px;padding:0;justify-content:center}
+}
+@media (max-height:500px) and (min-width:481px){
+  .selcard{padding:8px 10px;gap:6px;width:min(330px,40vw)}
+  .selcard .nums{display:none}
+  .selcard .acts{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .selcard .acts button{height:32px;padding:0 8px;font-size:12.5px;white-space:nowrap;flex-shrink:0}
+  .grail{gap:4px} .grail button{width:34px;height:34px;font-size:15px}
+}
+@media (max-width:700px){
+  html.nl .panel{top:auto;left:0;width:auto;height:68%;border-left:0;border-top:1px solid var(--rand);border-radius:18px 18px 0 0;transform:translateY(105%);
+    padding:10px max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+  .sbt{padding:4px 9px;gap:7px} .sbt b{font-size:26px} .sbm{min-width:78px;padding:3px 8px} #sbClock{font-size:20px}
+  .sbn span:first-child{font-size:11px} .sbn span:last-child{font-size:10.5px}
+  .hb{width:38px;height:38px}
+  .selcard{left:calc(10px + env(safe-area-inset-left,0px));width:calc(100% - 20px);bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+  .grail{top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:none}
+  .grail button{width:36px;height:36px;font-size:16px}
+  .dock button{height:42px;padding:0 11px}
+  .dock .pri{padding:0 16px}
+}
+@media (max-width:480px){
+  .sbn{display:none} .hud-top{gap:5px} .hb{width:36px;height:36px}
+  .grail{top:calc(58px + env(safe-area-inset-top,0px));bottom:auto;left:calc(10px + env(safe-area-inset-left,0px));flex-direction:row;transform:none}
+  .grail button{width:32px;height:32px;font-size:15px}
+  .selcard{padding:8px 10px;gap:6px}
+  .selcard .nums{display:none}
+  .selcard .acts button{height:32px;padding:0 8px;font-size:12.5px}
+  .dock{gap:4px;padding:5px}
+  .dock button>span{display:none} .dock .sep{display:none}
+  .dock button:has(svg){width:42px;padding:0;justify-content:center}
+  .selcard .acts{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .dock button{height:40px;padding:0 9px;font-size:14px}
+  .dock .pri{padding:0 12px;font-size:15px}
+  html.nl .stagetl{top:calc(100px + env(safe-area-inset-top,0px))}
+  html.nl .feed{top:calc(100px + env(safe-area-inset-top,0px))}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}

@@ -12,8 +12,13 @@ function resize(){
   const r=stageEl.getBoundingClientRect();DPR=window.devicePixelRatio||1;VW=r.width;VH=r.height;
   cv.width=Math.max(1,Math.round(VW*DPR));cv.height=Math.max(1,Math.round(VH*DPR));
   ROT=VH>VW*1.08;VVW=ROT?VH:VW;VVH=ROT?VW:VH;
-  const sc=Math.min(VVW/(VIEW.x1-VIEW.x0),VVH/(VIEW.y1-VIEW.y0));
-  FIT={SC:sc,OX:(VVW-(VIEW.x1-VIEW.x0)*sc)/2-VIEW.x0*sc,OY:(VVH-(VIEW.y1-VIEW.y0)*sc)/2-VIEW.y0*sc};
+  // in de nieuwe look laat het veld plaats voor het scorebord en de actiebalk
+  const nl=typeof NL==='function'&&NL(),narrow=VW<480;
+  const mt=nl?(narrow?100:62):0,mb=nl?70:0,ml=nl?(narrow?6:56):0,mr=nl?6:0;
+  const u0=ROT?mb:ml,u1=ROT?VVW-mt:VVW-mr,v0=ROT?ml:mt,v1=ROT?VVH-mr:VVH-mb;
+  const sc=Math.min((u1-u0)/(VIEW.x1-VIEW.x0),(v1-v0)/(VIEW.y1-VIEW.y0));
+  const ox=(nl&&ROT)?u1-(VIEW.x1-VIEW.x0)*sc-VIEW.x0*sc:u0+((u1-u0)-(VIEW.x1-VIEW.x0)*sc)/2-VIEW.x0*sc;
+  FIT={SC:sc,OX:ox,OY:v0+((v1-v0)-(VIEW.y1-VIEW.y0)*sc)/2-VIEW.y0*sc};
   SC=FIT.SC;OX=FIT.OX;OY=FIT.OY;
   noisePat=ctx.createPattern(noise,'repeat');
 }
@@ -41,6 +46,7 @@ function fieldT(){if(ROT)ctx.setTransform(0,-DPR,DPR,0,0,VVW*DPR);else ctx.setTr
 
 let drag=null,hover=null,mouseW=null;
 function draw(){
+  if(NL()){drawNL();return;}
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.fillStyle=C.asfalt2;ctx.fillRect(0,0,VW,VH);
   fieldT();

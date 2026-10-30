@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pakker En Loper</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -43,6 +43,49 @@
     <div class="msgs" id="msgBox" hidden></div>
     <div class="cmdhint" id="cmdHint" hidden></div>
     <button class="tik" id="tikBtn" hidden>Tik</button>
+    <div class="hud" id="hud">
+      <div class="hud-top">
+        <div class="hgrp"><button class="hb" id="hMenu" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="2" rx="1"/><rect x="3" y="9" width="14" height="2" rx="1"/><rect x="3" y="14" width="14" height="2" rx="1"/></svg></button></div>
+        <div class="sb" id="sb" aria-live="polite">
+          <div class="sbt sb0"><b id="sbS0">0</b><div class="sbn"><span id="sbN0">Jij</span><span id="sbR0">loopt</span></div></div>
+          <div class="sbm"><span id="sbClock">15:00</span><span id="sbPhase">Opstellen</span></div>
+          <div class="sbt sb1"><b id="sbS1">0</b><div class="sbn"><span id="sbN1">Computer</span><span id="sbR1">pakt</span></div></div>
+        </div>
+        <div class="hgrp"><button class="hb" id="hSpeed" aria-label="Snelheid">1×</button><button class="hb" id="hPause" aria-label="Pauze"></button></div>
+      </div>
+      <div class="hmenu" id="hMenuPop" hidden>
+        <button data-hm="stats">Statistieken</button>
+        <button data-hm="msg">Snelle berichten</button>
+        <button data-hm="sound" aria-pressed="true">Geluid</button>
+        <button data-hm="cam" aria-pressed="true">Camera volgt</button>
+        <button data-hm="keys" id="hmKeys">Toetsen</button>
+        <button data-hm="look">Klassieke look</button>
+        <button data-hm="menu">Naar het menu</button>
+      </div>
+      <div class="grail" id="grail" aria-label="Groepen">
+        <button class="grp" data-grp="1">1</button><button class="grp" data-grp="2">2</button><button class="grp" data-grp="3">3</button><button class="grp" data-grp="4">4</button><button class="grp" data-grp="5">5</button>
+      </div>
+      <div class="selcard" id="selCard" hidden></div>
+      <div class="rpbar" id="rpBar" hidden>Herhaling <button id="rpSkip">Stoppen</button></div>
+      <div class="dock" id="dock">
+        <button class="pri" id="dReady">Klaar</button>
+        <button class="pri" id="dCd">Aftellen</button>
+        <button id="dCharge">Aanval op C</button>
+        <button id="dHome">Terug naar B</button>
+        <span class="sep" id="dSep1"></span>
+        <button data-draw="line" aria-label="Lijn tekenen"><svg viewBox="0 0 20 20"><path d="M3 15L17 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg><span>Lijn</span></button>
+        <button data-draw="arc" aria-label="Boog tekenen"><svg viewBox="0 0 20 20"><path d="M3 16C5 7 11 4 17 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg><span>Boog</span></button>
+        <button data-draw="arrow" aria-label="Pijl tekenen"><svg viewBox="0 0 20 20"><path d="M3 15L15 5M9 5h6v6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span>Pijl</span></button>
+        <span class="sep" id="dSep2"></span>
+        <button id="dPos">Overnemen</button>
+        <button id="dQueue" aria-pressed="false" aria-label="Wachtrij"><svg viewBox="0 0 20 20"><path d="M4 6h12M4 10h12M4 14h7M14 12v5M11.5 14.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg><span>Wachtrij</span></button>
+        <button id="dReplay">Herhaling</button>
+        <button id="dStats">Statistieken</button>
+        <button id="dMore" aria-label="Meer"><svg viewBox="0 0 20 20"><circle cx="4.5" cy="10" r="1.8"/><circle cx="10" cy="10" r="1.8"/><circle cx="15.5" cy="10" r="1.8"/></svg><span id="dMoreT">Meer</span></button>
+      </div>
+      <div class="wheel" id="wheel" hidden></div>
+      <div class="pban" id="pban"></div>
+    </div>
   </div>
   <div class="mbar" id="mbar">
     <div class="mrow">
@@ -206,6 +249,10 @@
           <span class="d" id="bellD">Bij de bel wint de ploeg met de meeste punten.</span>
         </div>
       </div>
+      <div class="opt">
+        <span class="lbl">Look</span>
+        <div class="seg" role="group" aria-label="Look"><button data-set="look" data-v="nieuw">Nieuw</button><button data-set="look" data-v="klassiek">Klassiek</button></div>
+      </div>
       <p class="neterr" id="netErr" hidden></p>
       <button class="go" id="startBtn">Naar de speelplaats</button>
     </div>
@@ -248,6 +295,7 @@
     <ul class="rep" id="repList"></ul>
     <div class="row" style="justify-content:space-between">
       <label class="row hint"><input type="checkbox" id="repOff"> Verslagen overslaan</label>
+      <button id="repReplay">Herhaling</button>
       <button class="go" id="repNext">Volgende ronde</button>
     </div>
   </div>
@@ -311,6 +359,7 @@
 <script src="js/12-online.js"></script>
 <script src="js/13-oefenen.js"></script>
 <script src="js/14-mobiel.js"></script>
-<script src="js/15-lus.js"></script>
+<script src="js/15-nieuwe-look.js"></script>
+<script src="js/16-lus.js"></script>
 </body>
 </html>

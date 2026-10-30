@@ -122,18 +122,24 @@ function persp(s){if(!S.watch)return s;
   return String(s).replace(/Jouw ploeg/g,'Blauw').replace(/jouw ploeg/g,'Blauw').replace(/De andere ploeg/g,'Oranje').replace(/de andere ploeg/g,'Oranje');}
 function log(html){html=persp(html);const li=document.createElement('li');li.innerHTML=`<span class="tm">${fmt(S.rt||0)}</span>${html}`;logEl.prepend(li);while(logEl.children.length>60)logEl.lastChild.remove();}
 function toast(t){toastLong(t,3200);}
-function toastLong(t,ms){t=persp(t);const el=document.createElement('div');el.className='toast';el.textContent=t;document.getElementById('toasts').prepend(el);setTimeout(()=>el.remove(),ms||3200);}
+function toastLong(t,ms){if(S.demo)return;t=persp(t);const el=document.createElement('div');el.className='toast';el.textContent=t;document.getElementById('toasts').prepend(el);setTimeout(()=>el.remove(),ms||3200);}
 /* een bericht voor beide spelers: h0 voor jou, h1 voor je vriend (zelfde als h0 als je niets opgeeft) */
 function say(h0,h1){log(h0);if(isHost())netSend({t:'log',h:h1===undefined?h0:h1});}
 function logTeam(t,h){if(t===0)log(h);else if(isHost())netSend({t:'log',h});}
 /* geluid voor beide spelers, vanuit ieders eigen kant */
 /* korte melding bovenaan het veld. c: ploeg (0/1) voor de kleur, of 'mg' voor geel */
-function feedShow(txt,c){
+function feedShow(txt,c){if(S.demo)return;
   const box=document.getElementById('feed');if(!box)return;
   const el=document.createElement('div');el.textContent=persp(txt);el.className=typeof c==='number'?'m'+c:(c||'');
   box.appendChild(el);while(box.children.length>3)box.firstChild.remove();
   setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.remove(),450);},3200);
 }
+/* grote fasebanner in het midden (alleen in de nieuwe look) */
+function banner(txt,cls){
+  if(!NL()||S.demo)return;const el=document.getElementById('pban');if(!el)return;
+  el.textContent=persp(txt);el.className='pban '+(cls||'');void el.offsetWidth;el.classList.add('show');
+}
+function bannerAll(t0,c0,t1,c1){banner(t0,c0);if(isHost())netSend({t:'bn',x:t1===undefined?t0:t1,c:c1===undefined?c0:c1});}
 function feedAll(txt,c){feedShow(txt,c);if(isHost())netSend({t:'feed',x:txt,c:typeof c==='number'?c^1:c});}
 const CHAT=['Goed gespeeld!','Te traag!','Bijna!','Revanche?','Oeps.','Kom maar op!'];
 let chatT=0;
@@ -156,6 +162,7 @@ function sfx(n,a){
 }
 /* zwevende tekst; de gast krijgt hem alleen als hij dat kind kan zien */
 function fx(k,txt){S.floats.push({x:k.x,y:k.y,t:S.time,txt});
+  if(txt==='getikt')S.edge.push({x:k.x,y:k.y,t:performance.now(),c:k.team^1});
   if(isHost()&&(k.team===1||S.vis1.has(k.id)||txt==='getikt'))netSend({t:'fx',x:k.x,y:k.y,txt});}
 function toggleKeys(on){document.getElementById('keysOv').hidden=!on;if(on&&!S.paused&&!S.over&&!online()){S.paused=true;S._keysPaused=true;}else if(!on&&S._keysPaused){S.paused=false;S._keysPaused=false;}syncUI();}
 const ROLE_TXT={jager:'jager',bewaker:'bewaker',muur:'muur',boogman:'boogman',vangnet:'vangnet',sneaker:'sneaker',lokaas:'lokaas'};
@@ -183,6 +190,7 @@ document.getElementById('roster').addEventListener('click',e=>{
 });
 function syncUI(){
   if(typeof syncMobile==='function')try{syncMobile();}catch(_){}
+  if(typeof syncNL==='function')try{syncNL();}catch(e){console.error(e);}
   if(typeof guestSyncMine==='function')try{guestSyncMine();}catch(_){}
   try{for(const id of ['soundBtn','mSound'])document.getElementById(id).setAttribute('aria-pressed',String(SFX.on));}catch(_){}
   if(typeof syncPossess==='function')try{syncPossess();}catch(_){}
@@ -246,8 +254,9 @@ document.getElementById('newBtn').addEventListener('click',()=>{
   if(isGuest()){netLeave('Je hebt het spel verlaten.');return;}
   if(isHost()){newGame();sendInit();return;}
   S.tut=null;tutRender();
-  S.over=true;S.paused=true;document.getElementById('startOv').hidden=false;});
+  S.over=true;S.paused=true;S.started=false;closeSheet(false);document.getElementById('startOv').hidden=false;startDemo();});
 document.getElementById('repNext').addEventListener('click',nextRound);
+document.getElementById('repReplay').addEventListener('click',()=>playReplay());
 const repOff=document.getElementById('repOff');repOff.checked=S.reportsOff;
 repOff.addEventListener('change',()=>{S.reportsOff=repOff.checked;try{localStorage.setItem('pel-rep-off',S.reportsOff?'1':'0');}catch(e){}});
 const DESC={mode:{dyn:'Geen rollen. Kinderen doen alleen wat je beveelt, plus ontwijken en tikken op korte afstand.',rol:'Geef kinderen een rol (of twee met een wisselvoorwaarde). Bevelen gaan altijd voor de rol.'},
@@ -259,6 +268,7 @@ document.querySelectorAll('[data-set]').forEach(b=>b.addEventListener('click',()
   if(key==='realism'){S.set.realism=v==='1';document.getElementById('realD').textContent=DESC.realism[v];}
   if(key==='start')S.set.start=v;
   if(key==='net')setNetChoice(v);
+  if(key==='look')setLook(v);
   if(key==='bell'){S.set.bell=+v;document.getElementById('bellD').textContent=+v?'Bij de bel wint de ploeg met de meeste punten.':'Het spel loopt door tot je zelf stopt.';}
 }));
 let netChoice='off';
@@ -281,6 +291,7 @@ function setNetChoice(v){
   document.getElementById('startBtn').textContent={off:'Naar de speelplaats',host:'Spel aanmaken',join:'Meedoen',watch:'Kijken',learn:'Start de rondleiding'}[v];
 }
 document.getElementById('startBtn').addEventListener('click',()=>{
+  stopDemo();
   if(netChoice==='host'){startHost();return;}
   if(netChoice==='join'){startJoin(document.getElementById('joinCode').value);return;}
   if(netChoice==='learn'){startTutorial();return;}

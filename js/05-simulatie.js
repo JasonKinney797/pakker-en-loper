@@ -35,7 +35,13 @@ function physics(){
   }
   for(const k of act){
     if(isLoper(k)){if(S.setup){k.x=clamp(k.x,.35,4.65);k.y=clamp(k.y,10.35,14.65);}else{k.x=clamp(k.x,.3,36.5);k.y=clamp(k.y,.3,24.7);}}
-    else{k.x=clamp(k.x,.3,34.7);k.y=clamp(k.y,.3,24.7);}
+    else{k.x=clamp(k.x,.3,34.7);k.y=clamp(k.y,.3,24.7);
+      // zolang B veilig is, kan geen enkele pakker in B: hij stopt aan de rand
+      if(!S.cdDone){const m=.3;
+        if(k.x<B.x1+m&&k.y>B.y0-m&&k.y<B.y1+m){
+          const dR=B.x1+m-k.x,dT=k.y-(B.y0-m),dB=(B.y1+m)-k.y,mn=Math.min(dR,dT,dB);
+          if(mn===dR){k.x=B.x1+m;if(k.vx<0)k.vx=0;}else if(mn===dT){k.y=B.y0-m;if(k.vy>0)k.vy=0;}else{k.y=B.y1+m;if(k.vy<0)k.vy=0;}
+        }}}
   }
   if(!S.cdDone){   // hoogstens 2 pakkers binnen 3 m van B
     const P=1-lt();
@@ -143,6 +149,9 @@ function endRound(winner,crosser){
   const who=wt===0?'jouw ploeg':'de andere ploeg';
   const msg=w=>winner==='lopers'?`<b>${crosser.name}</b> is over C bij ${zoneOf(crosser.y)}. Punt voor ${w}.`:`Alle lopers getikt. Punt voor ${w}.`;
   say(msg(who),msg(wt===1?'jouw ploeg':'de andere ploeg'));
+  bannerAll(wt===0?'Punt voor jou':'Punt voor de ander',wt===0?'m0':'m1',wt===1?'Punt voor jou':'Punt voor de ander',wt===1?'m0':'m1');
+  if(!isGuest())S.replay={frames:S.rec.slice(-90),cross:winner==='lopers'?{y:crosser.y}:null};
+  if(winner==='lopers')S.edge.push({x:35,y:crosser.y,t:performance.now(),c:L});
   showReport(winner,wt,wasTb);
 }
 function tie(l,p){
@@ -180,18 +189,19 @@ function step(dt){
     if(S.ready[0]&&S.ready[1]){
       if(S.watch){const L=lt(),P=1-L,nm=t=>t===0?'Blauw':'Oranje';
         log(`${nm(P)} pakt: ${S.ev.tac[P]||'?'}. ${nm(L)} loopt: ${S.ev.tac[L]||'?'}.`);}
-      S.setup=false;say('<b>Start!</b> Beide ploegen staan klaar.');sfx('whistle');}
+      S.setup=false;bannerAll('Start!','mg');say('<b>Start!</b> Beide ploegen staan klaar.');sfx('whistle');}
     return;
   }
   S.rt+=dt;
   if(S.tb){S.tb.clock-=dt;if(S.tb.clock<=0)return tbTimeout();}
   else{S.block-=dt;if(S.block<=0)return blockTimeout();}
-  if(S.cd&&!S.cdDone){const pc=Math.ceil(S.cd.left);S.cd.left-=dt;const nc=Math.ceil(S.cd.left);if(nc!==pc&&nc>0)sfx('beep',false);if(S.cd.left<=0)sfx('beep',true);if(S.cd.left<=0){S.cdDone=true;feedAll('B is niet meer veilig','mg');say('Aftellen klaar: <b>B is niet meer veilig</b>.');}}
+  if(S.cd&&!S.cdDone){const pc=Math.ceil(S.cd.left);S.cd.left-=dt;const nc=Math.ceil(S.cd.left);if(nc!==pc&&nc>0)sfx('beep',false);if(S.cd.left<=0)sfx('beep',true);if(S.cd.left<=0){S.cdDone=true;feedAll('B is niet meer veilig','mg');bannerAll('B is open','hot');say('Aftellen klaar: <b>B is niet meer veilig</b>.');}}
   S.percT-=dt;if(S.percT<=0){S.percT=.1;perceive();}
   S.capT-=dt;if(S.capT<=0){S.capT=.1;captain();observe();}
   for(const k of S.kids){k.thinkT-=dt;if(k.thinkT<=0){k.thinkT+=.1;think(k);}}
   for(const k of S.kids){if(k.status==='active')move(k,dt);else if(k.status==='prisoner')walkPrisoner(k,dt);}
   physics();
+  S.recT-=dt;if(S.recT<=0){S.recT=.1;S.rec.push(S.kids.filter(k=>k.status!=='bench').map(k=>[k.id,+k.x.toFixed(2),+k.y.toFixed(2),+k.face.toFixed(2),k.status==='active'?0:1,+k.vx.toFixed(2),+k.vy.toFixed(2)]));if(S.rec.length>130)S.rec.shift();}
   tagsAndEnd();
   S.calls=S.calls.filter(c=>S.time-c.t<6);
 }
@@ -249,7 +259,7 @@ function showEnd(){
 }
 function endAction(kind){
   document.getElementById('endOv').hidden=true;
-  if(kind==='menu'){if(online())netLeave();S.over=true;S.started=false;setWatch(false);document.getElementById('startOv').hidden=false;return;}
+  if(kind==='menu'){if(online())netLeave();S.over=true;S.started=false;setWatch(false);document.getElementById('startOv').hidden=false;startDemo();return;}
   newGame(kind==='rematch');
   if(isHost())sendInit();
 }

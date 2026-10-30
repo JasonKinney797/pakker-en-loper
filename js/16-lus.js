@@ -18,3 +18,4 @@ function frame(now){
 }
 new ResizeObserver(resize).observe(stageEl);resize();
 requestAnimationFrame(frame);
+setTimeout(()=>{if(!S.started)startDemo();},0);

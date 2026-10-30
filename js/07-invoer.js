@@ -133,12 +133,17 @@ const local=e=>{const rc=cv.getBoundingClientRect();return {x:e.clientX-rc.left,
 const ptrs=new Map();let ts=null,lpTimer=null;
 cv.addEventListener('pointerdown',e=>{
   const q=local(e);
+  if(S.rp){endReplay();return;}
+  closeWheel();closeHMenu();
   if(e.pointerType==='mouse'){
     const w=toW(q.x,q.y);
     if(S.over&&!S.paused&&!S.started)return;
-    if(e.button===2){if(S.watch)return;if(S.cmd)setCmd(null);orderAt(w,e.shiftKey,null,true);return;}
+    if(e.button===2){if(S.watch)return;if(S.cmd)setCmd(null);
+      if(NL()){const sh=e.shiftKey;rhold={w,q,opened:false,timer:setTimeout(()=>{rhold.opened=true;openWheel(q.x,q.y,w);},260),sh};return;}
+      orderAt(w,e.shiftKey,null,true);return;}
     if(e.button!==0)return;
     if(S.draw){drawing={tool:S.draw,a:w,b:w};return;}
+    {const hd=handleAt(q.x,q.y,12);if(hd){hdrag=hd;return;}}
     if(S.cmd){execCmd(w,e.shiftKey);return;}
     drag={sx:q.x,sy:q.y,cx:q.x,cy:q.y,box:false,shift:e.shiftKey};
     return;
@@ -147,6 +152,7 @@ cv.addEventListener('pointerdown',e=>{
   try{cv.setPointerCapture(e.pointerId);}catch(_){}
   if(S.pos&&!S.paused&&!S.over&&!joy&&q.x<VW*.5){joy={id:e.pointerId,ox:q.x,oy:q.y,x:q.x,y:q.y};return;}
   ptrs.set(e.pointerId,q);clearTimeout(lpTimer);
+  if(ptrs.size===1&&NL()){const hd=handleAt(q.x,q.y,24);if(hd){ts={mode:'handle',id:e.pointerId,h:hd};return;}}
   if(S.draw&&ptrs.size===1&&S.started){const w=toW(q.x,q.y);drawing={tool:S.draw,a:w,b:w};ts={mode:'draw',id:e.pointerId};return;}
   if(ptrs.size>=2){drawing=null;
     const [p1,p2]=[...ptrs.values()];drag=null;
@@ -154,7 +160,8 @@ cv.addEventListener('pointerdown',e=>{
     return;
   }
   ts={mode:'tap',sx:q.x,sy:q.y,lx:q.x,ly:q.y,id:e.pointerId};
-  lpTimer=setTimeout(()=>{if(ts&&ts.mode==='tap'&&S.started){ts.mode='box';drag={sx:ts.sx,sy:ts.sy,cx:ts.lx,cy:ts.ly,box:true};try{navigator.vibrate&&navigator.vibrate(12);}catch(_){}}},380);
+  lpTimer=setTimeout(()=>{if(ts&&ts.mode==='tap'&&S.started&&NL()&&!S.watch){ts.mode='lp';try{navigator.vibrate&&navigator.vibrate(12);}catch(_){}openWheel(ts.sx,ts.sy,toW(ts.sx,ts.sy));return;}
+    if(ts&&ts.mode==='tap'&&S.started){ts.mode='box';drag={sx:ts.sx,sy:ts.sy,cx:ts.lx,cy:ts.ly,box:true};try{navigator.vibrate&&navigator.vibrate(12);}catch(_){}}},380);
 });
 cv.addEventListener('pointermove',e=>{
   if(e.pointerType==='mouse')return;
@@ -168,6 +175,8 @@ cv.addEventListener('pointermove',e=>{
   }
   if(e.pointerId!==ts.id)return;
   if(ts.mode==='draw'){if(drawing)drawing.b=toW(q.x,q.y);return;}
+  if(ts.mode==='handle'){moveHandle(ts.h,q.x,q.y);return;}
+  if(ts.mode==='lp'&&hyp(q.x-ts.sx,q.y-ts.sy)>14){closeWheel();ts.mode='box';drag={sx:ts.sx,sy:ts.sy,cx:q.x,cy:q.y,box:true};}
   if(ts.mode==='tap'&&hyp(q.x-ts.sx,q.y-ts.sy)>10){clearTimeout(lpTimer);ts.mode='pan';if(S.pos&&S.camFollow&&SC>FIT.SC*1.01){S.camFollow=false;syncUI();}}
   if(ts.mode==='pan')panBy(q.x-ts.lx,q.y-ts.ly);
   if(ts.mode==='box'&&drag){drag.cx=q.x;drag.cy=q.y;}
@@ -185,6 +194,8 @@ function touchEnd(e){
   }
   if(e.pointerId!==ts.id)return;
   if(ts.mode==='draw'){const d=drawing;drawing=null;ts=null;if(d&&e.type==='pointerup')applyDraw(d);return;}
+  if(ts.mode==='handle'){ts=null;syncUI();return;}
+  if(ts.mode==='lp'){ts=null;return;}
   if(e.type==='pointerup'){
     if(ts.mode==='tap')tapAt(ts.sx,ts.sy);
     else if(ts.mode==='box'&&drag)boxSelect(drag,false);
@@ -198,11 +209,15 @@ window.addEventListener('pointermove',e=>{
   if(e.pointerType!=='mouse')return;
   const q=local(e);
   mouseW=toW(q.x,q.y);
+  if(hdrag){moveHandle(hdrag,q.x,q.y);return;}
+  if(rhold&&!rhold.opened&&hyp(q.x-rhold.q.x,q.y-rhold.q.y)>10){clearTimeout(rhold.timer);rhold.opened=true;}
   if(drawing)drawing.b=mouseW;
   hover=pickKid(mouseW,k=>S.watch||k.team===0||k.status!=='active'||S.vis0.has(k.id));
   if(drag){drag.cx=q.x;drag.cy=q.y;if(Math.abs(q.x-drag.sx)+Math.abs(q.y-drag.sy)>6)drag.box=true;}
 });
 window.addEventListener('pointerup',e=>{
+  if(e.pointerType==='mouse'&&e.button===2&&rhold){const r=rhold;rhold=null;clearTimeout(r.timer);if(!r.opened)orderAt(r.w,r.sh,null,true);return;}
+  if(e.pointerType==='mouse'&&hdrag&&e.button===0){hdrag=null;syncUI();return;}
   if(e.pointerType==='mouse'&&drawing&&e.button===0){const d=drawing;drawing=null;applyDraw(d);return;}
   if(e.pointerType!=='mouse'||!drag||e.button!==0)return;
   const d=drag;drag=null;
@@ -251,6 +266,8 @@ window.addEventListener('keydown',e=>{
   if(k==='s'){selected().forEach(x=>{x.orders=[];});syncUI();return;}
   if(k==='t'){playerCountdown();return;}
   if(k==='k'){toggleKeys(true);return;}
+  if(k==='escape'&&(wheelOpen()||hmenuOpen())){closeWheel();closeHMenu();return;}
+  if(k==='escape'&&S.rp){endReplay();return;}
   if(k==='escape'){if(S.draw)setDraw(null);else if(S.cmd)setCmd(null);else{S.sel.clear();syncUI();}return;}
   if(k==='-'){if(!online())setSpeed(S.speed===2?1:.5);return;}
   if(k==='='||k==='+'){setSpeed(S.speed===.5?1:2);return;}
