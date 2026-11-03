@@ -14,7 +14,8 @@ function canSee(a,b){
   return true;
 }
 function perceive(){
-  S.vis0.clear();S.vis1.clear();
+  S.vis1.clear();const vt0=new Set();S.visK={};
+  const eyes=new Set();if(S.pos)eyes.add(S.pos.id);for(const st of NET.seats)if(st.rp)eyes.add(st.rp.id);
   const act=active();
   for(const a of act){
     if(a.ctrl!=='mens'&&S.time>=a.nextScan){const L=lv(a);a.scanUntil=S.time+.35;a.nextScan=S.time+L.scan*(.85+rand()*.3);}
@@ -25,10 +26,15 @@ function perceive(){
       const cont=m&&S.time-m.t<.5;
       const first=cont?m.first:S.time, fd=cont?m.fd:hyp(b.x-a.x,b.y-a.y);
       a.mem.set(b.id,{x:b.x,y:b.y,vx:b.vx,vy:b.vy,t:S.time,first,fd});
-      if(a.team===0&&(!S.pos||a.id===S.pos.id)){S.vis0.add(b.id);S.ghost.set(b.id,{x:b.x,y:b.y,t:S.time});}
-      else if(a.team===1&&isHost()&&(!S.rpos||a.id===S.rpos.id))S.vis1.add(b.id);
+      if(a.team===0)vt0.add(b.id);else S.vis1.add(b.id);
+      if(eyes.has(a.id))(S.visK[a.id]||(S.visK[a.id]=new Set())).add(b.id);
     }
   }
+  // wat jij ziet: je hele ploeg, of alleen je overgenomen kind; met God Mode (geen mist) iedereen
+  let mine=S.pos?(S.visK[S.pos.id]||new Set()):vt0;
+  if(godFog()&&!S.watch){mine=new Set(act.filter(k=>k.team===1).map(k=>k.id));}
+  S.vis0=mine;S.visT0=vt0;
+  for(const id of mine){const b=S.byId.get(id);if(b)S.ghost.set(id,{x:b.x,y:b.y,t:S.time});}
 }
 function known(k,ready){
   const out=[];
@@ -156,7 +162,7 @@ function callHelp(k){
     h.ai.call={x:c.x,y:c.y,t:S.time+delay,until:S.time+delay+6};
   }
   if(k.team===0&&!S.watch)toast(`${k.name} roept om hulp bij ${zoneOf(k.y)}.`);
-  else if(isHost()){netSend({t:'toast',m:`${k.name} roept om hulp bij ${zoneOf(k.y)}.`});netSend({t:'ping',x:k.x,y:k.y});netSend({t:'sfx',n:'help'});}
+  if(isHost()){netTeam(k.team,{t:'toast',m:`${k.name} roept om hulp bij ${zoneOf(k.y)}.`});netTeam(k.team,{t:'ping',x:k.x,y:k.y});netTeam(k.team,{t:'sfx',n:'help'});}
 }
 function hunter(k){
   const L=lv(k);const ks=known(k).filter(e=>!safe(e.o));

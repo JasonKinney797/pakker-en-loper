@@ -8,8 +8,8 @@ function enemyAt(w,tol){
   for(const k of S.kids){if(!ghostEnemy(k))continue;const p=S.vis0.has(k.id)?k:S.ghost.get(k.id);const d=hyp(p.x-w.x,p.y-w.y);if(d<bd){bd=d;b=k;}}
   return b;
 }
-function selected(){return [...S.sel].map(id=>S.byId.get(id)).filter(k=>k&&(k.team===0||S.watch)&&k.status==='active');}
-const mineSel=k=>(k.team===0||S.watch)&&k.status==='active';
+function selected(){return [...S.sel].map(id=>S.byId.get(id)).filter(k=>k&&(myKid(k)||S.watch)&&k.status==='active');}
+const mineSel=k=>(myKid(k)||S.watch)&&k.status==='active';
 function giveOrder(o,queue,ks){
   ks=ks||selected();if(!ks.length)return;
   queue=queue||S.queue;
@@ -33,7 +33,7 @@ function setCmd(c){S.cmd=c;const h=document.getElementById('cmdHint');
 }
 function execCmd(w,shift,tol){
   const c=S.cmd;if(!c)return false;shift=shift||S.queue;
-  const e=enemyAt(w,tol&&tol+.05),own=pickKid(w,k=>k.team===0&&k.status==='active',tol);
+  const e=enemyAt(w,tol&&tol+.05),own=pickKid(w,k=>myKid(k)&&k.status==='active',tol);
   if(c==='move')groupMove(w,shift,S.pace);
   else if(c==='attack'){selected().forEach(k=>giveOrder({t:'attack',x:isLoper(k)?Math.max(w.x,k.x>w.x?35.8:w.x):w.x,y:w.y},shift,[k]));}
   else if(c==='follow'){const t=e||own;if(!t)return true;giveOrder({t:'follow',id:t.id,pace:S.pace},shift);}
@@ -57,7 +57,7 @@ function setDraw(t){
 }
 function drawKids(){
   let ks=selected();
-  if(!ks.length)ks=S.kids.filter(k=>k.team===0&&k.status==='active'&&k.ctrl!=='mens');
+  if(!ks.length)ks=S.kids.filter(k=>myKid(k)&&k.status==='active'&&k.ctrl!=='mens');
   return ks.filter(k=>k.ctrl!=='mens');
 }
 function arcPts(a,b,n){
@@ -97,7 +97,7 @@ function applyDraw(d){
 document.querySelectorAll('[data-draw]').forEach(b=>b.addEventListener('click',()=>{setDraw(b.dataset.draw);if(S.draw)sheetAfterAction();}));
 /* rechtsklik (muis) en tik op de grond of een tegenstander (aanraken) */
 function orderAt(w,shift,tol,ownFollow){
-  const en=enemyAt(w,tol&&tol+.05),own=ownFollow?pickKid(w,k=>k.team===0&&k.status==='active'&&!S.sel.has(k.id),tol):null;
+  const en=enemyAt(w,tol&&tol+.05),own=ownFollow?pickKid(w,k=>myKid(k)&&k.status==='active'&&!S.sel.has(k.id),tol):null;
   const ks=selected();if(!ks.length)return;
   if(en){
     const pk=ks.filter(k=>!isLoper(k)),lp=ks.filter(isLoper);
@@ -128,7 +128,7 @@ function tapAt(px,py){
   orderAt(w,S.queue,tol,false);
 }
 let lastTap=null;
-cv.addEventListener('dblclick',e=>{const q=local(e);const k=pickKid(toW(q.x,q.y),k=>k.team===0&&k.status==='active');if(k){S.sel=new Set([k.id]);tryPossess(k);}});
+cv.addEventListener('dblclick',e=>{const q=local(e);const k=pickKid(toW(q.x,q.y),k=>myKid(k)&&k.status==='active');if(k){S.sel=new Set([k.id]);tryPossess(k);}});
 const local=e=>{const rc=cv.getBoundingClientRect();return {x:e.clientX-rc.left,y:e.clientY-rc.top};};
 const ptrs=new Map();let ts=null,lpTimer=null;
 cv.addEventListener('pointerdown',e=>{
@@ -253,7 +253,7 @@ window.addEventListener('keydown',e=>{
   }
   if(e.ctrlKey||e.metaKey){
     if(/^[1-5]$/.test(k)){S.groups[k]=[...S.sel];toast(`Groep ${k} bewaard (${S.sel.size}).`);e.preventDefault();}
-    else if(k==='a'){S.sel=new Set(S.kids.filter(x=>x.team===0&&x.status==='active').map(x=>x.id));syncUI();e.preventDefault();}
+    else if(k==='a'){S.sel=new Set(S.kids.filter(x=>myKid(x)&&x.status==='active').map(x=>x.id));syncUI();e.preventDefault();}
     return;
   }
   if(k===' '){togglePause();e.preventDefault();return;}

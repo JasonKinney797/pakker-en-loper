@@ -40,7 +40,7 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','
 
 /* ---------- Toestand ---------- */
 const S={
-  set:{mode:'dyn',realism:false,start:'lopers',count:25,bell:15},
+  set:{mode:'dyn',realism:false,start:'lopers',count:25,bell:15,fmt:'11'},
   kids:[],byId:new Map(),time:0,rt:0,role:['lopers','pakkers'],score:[0,0],block:600,
   tb:null,cd:null,cdDone:false,paused:true,speed:1,over:true,round:0,
   hists:[{lScoresY:[],boogSeen:[]},{lScoresY:[],boogSeen:[]}],plans:[null,null],auto0:false,ev:null,
@@ -53,13 +53,14 @@ const lt=()=>S.role[0]==='lopers'?0:1;   // team dat loopt
 const isLoper=k=>S.role[k.team]==='lopers';
 function lv(k){return (!isAI(k.team)&&!S.set.realism)?LV.perfect:LV[k.level];}
 const active=()=>S.kids.filter(k=>k.status==='active');
+const myKid=k=>k.team===0&&!k.notMine;   // een kind dat jij mag besturen (online met z'n tweeën: jouw helft)
 /* ---- online: wie bestuurt welke ploeg ----
    NET.mode: 'off' (tegen de computer), 'host' (jouw browser rekent het spel uit), 'guest' (je vriend) */
-const NET={mode:'off',conn:null,peer:null,bc:null,code:'',lastRx:0,guestGone:false,sendT:0,inT:0,lastIn:'',base:{},nextAt:0,hbT:0,joined:false};
+const NET={mode:'off',conn:null,peer:null,bc:null,code:'',lastRx:0,sendT:0,inT:0,lastIn:'',base:{},nextAt:0,hbT:0,joined:false,seats:[],fmt:'11',started:false,gid:''};
 const online=()=>NET.mode!=='off';
 const isGuest=()=>NET.mode==='guest';
 const isHost=()=>NET.mode==='host';
-const isAI=t=>t===1?!(isHost()&&!NET.guestGone):!!S.auto0;   // in kijkmodus is S.auto0 aan: beide ploegen zijn computer   // auto0: ook jouw ploeg door de computer (alleen voor tests)
+const isAI=t=>t===1?!(isHost()&&NET.seats.some(s=>s.team===1&&s.i>0&&s.joined&&!s.gone)):!!S.auto0;   // in kijkmodus is S.auto0 aan: beide ploegen zijn computer   // auto0: ook jouw ploeg door de computer (alleen voor tests)
 const aiTeams=()=>[0,1].filter(isAI);
 
 function rollKid(id,name,team){
@@ -70,7 +71,7 @@ function rollKid(id,name,team){
     stam:clamp(gauss(11.5,1.8),8,15),
     react:clamp(gauss(.35,.05),.25,.45),
     reach:1.1+rand()*.1,
-    level:wpick((team===1||S.watch)&&!online()?LV_ROLL_CPU:LV_ROLL),
+    level:wpick((team===1||S.watch)&&(!online()||NET.fmt==='2c')?LV_ROLL_CPU:LV_ROLL),
     x:0,y:0,vx:0,vy:0,px:0,py:0,face:0,energy:1,tired:false,status:'active',
     orders:[],role:'',role2:'',cond:'cd',condVal:0,switched:false,post:null,
     mem:new Map(),tagCD:0,lastTurn:-9,nextScan:rand()*2,scanUntil:0,intent:null,look:null,
@@ -94,8 +95,9 @@ function newGame(keep){
   S.bell=S.set.bell?S.set.bell*60:0;S.ended=false;S.marks=[];S.bellWarn=0;S.replay=null;S.edge=[];if(S.rp)endReplay();
   S.role=[S.set.start,S.set.start==='lopers'?'pakkers':'lopers'];
   S.score=[0,0];S.block=600;S.round=0;S.tb=null;S.learn=[newLearn(),newLearn()];S.hists=[{lScoresY:[],boogSeen:[]},{lScoresY:[],boogSeen:[]}];
-  if(S.pos)release(null);if(S.rpos)remoteRelease(null);S.sel.clear();S.groups={};S.time=0;
+  if(S.pos)release(null);remoteReleaseAll(null);S.sel.clear();S.groups={};S.time=0;S.godUsed=false;
   logClear();
+  assignOwners();godApply();
   applyDefaultRoles();
   const n0=S.kids.filter(k=>k.team===0).length,n1=S.kids.filter(k=>k.team===1).length;
   const nk=keep?'Revanche met dezelfde klas':'Nieuwe klas gerold';
@@ -107,14 +109,16 @@ function newGame(keep){
 
 function applyDefaultRoles(){
   for(const k of S.kids){k.role='';k.role2='';k.switched=false;k.ai={};}
-  if(S.set.mode!=='rol')return;
-  for(const t of [0,1]){if(isAI(t))continue;
-    const mine=S.kids.filter(k=>k.team===t).sort((a,b)=>b.top-a.top);
-    if(S.role[t]==='pakkers'){mine.forEach((k,i)=>{k.role=i===0?'jager':'muur';});}}
+  for(const t of [0,1])defaultRolesFor(t);
+}
+function defaultRolesFor(t){
+  if(S.set.mode!=='rol'||isAI(t))return;
+  const mine=S.kids.filter(k=>k.team===t).sort((a,b)=>(a.b||a).top<(b.b||b).top?1:-1);
+  if(S.role[t]==='pakkers'){mine.forEach((k,i)=>{k.role=i===0?'jager':'muur';});}
 }
 
 function startRound(){
-  S.round++;S.rt=0;S.cd=null;S.cdDone=false;S.over=false;S.rec=[];S.recT=0;S.setup=true;S.setupT=0;S.ready=[false,false];S._nG=0;S.calls=[];S.floats=[];S.pings=[];
+  S.round++;S.rt=0;S.cd=null;S.cdDone=false;S.over=false;S.rec=[];S.recT=0;S.setup=true;S.setupT=0;S.ready=[false,false];S._nG=0;for(const st of NET.seats)st.ready=false;S.calls=[];S.floats=[];S.pings=[];
   S.ghost.clear();S.vis0.clear();
   S.plans=[null,null];S.ev={hov:[null,null],lures:[0,0],obsMassa:[null,null],key:['',''],tags:[],miss:[0,0],cross:null,tac:['',''],cdBy:null,cdAt:null,startClock:S.time};
   const L=lt(),P=1-L;

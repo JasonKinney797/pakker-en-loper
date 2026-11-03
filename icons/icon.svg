@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><defs>
+<clipPath id="c"><rect width="512" height="512" rx="112"/></clipPath>
+<linearGradient id="gl" x1="0" x2="1"><stop offset="0" stop-color="#ffd23f" stop-opacity="0"/><stop offset="1" stop-color="#ffd23f" stop-opacity=".4"/></linearGradient></defs>
+<g clip-path="url(#c)"><rect width="512" height="512" fill="#0d1117"/><g transform="translate(256 256) scale(1.0) translate(-256 -256)">
+<rect x="200" y="-200" width="400" height="912" fill="url(#gl)"/>
+<rect x="318" y="-200" width="26" height="912" fill="#ffd23f"/>
+<path d="M118 360 Q240 330 345 240" stroke="#38bdf8" stroke-width="12" stroke-dasharray="4 24" stroke-linecap="round" fill="none" opacity=".8"/>
+<g transform="translate(165,355) rotate(-25)">
+<ellipse cx="6" cy="10" rx="86.10000000000001" ry="65.60000000000001" fill="rgba(0,0,0,.35)"/>
+<rect x="-45.1" y="28.7" width="26.240000000000002" height="61.5" rx="13.120000000000001" fill="#2b3442"/>
+<rect x="18.86" y="-90.2" width="26.240000000000002" height="61.5" rx="13.120000000000001" fill="#2b3442"/>
+<ellipse rx="82" ry="63.96" fill="#fb7a50" stroke="#fff" stroke-width="7"/>
+<circle r="41.0" fill="#5a3a22"/><circle cx="6.5600000000000005" cy="4.92" r="27.880000000000003" fill="#f2c9a0"/></g><g transform="translate(395,200) rotate(-25)">
+<ellipse cx="6" cy="10" rx="86.10000000000001" ry="65.60000000000001" fill="rgba(0,0,0,.35)"/>
+<rect x="-45.1" y="28.7" width="26.240000000000002" height="61.5" rx="13.120000000000001" fill="#2b3442"/>
+<rect x="18.86" y="-90.2" width="26.240000000000002" height="61.5" rx="13.120000000000001" fill="#2b3442"/>
+<ellipse rx="82" ry="63.96" fill="#38bdf8" stroke="#0d1117" stroke-width="5"/>
+<circle r="41.0" fill="#5a3a22"/><circle cx="6.5600000000000005" cy="4.92" r="27.880000000000003" fill="#f2c9a0"/></g></g></g></svg>

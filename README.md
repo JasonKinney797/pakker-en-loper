@@ -1,6 +1,16 @@
 # Pakker En Loper
 
+![Pakker En Loper](icons/icon-192.png)
+
+**Speel online: https://jasonkinney797.github.io/pakker-en-loper/**
+
 Het speeltijdspel als RTS in de browser. Geen installatie nodig.
+
+## Als app op je gsm
+- Android: open de link in Chrome en kies "App installeren" (of in het menu ⋮ "Toevoegen aan startscherm").
+- iPhone: open de link in Safari, tik op het deel-icoon en kies "Zet op beginscherm".
+
+Het spel opent dan schermvullend en werkt ook zonder internet (online spelen niet).
 
 ## Openen
 Open de map in VS Code en dubbelklik `index.html`, of open het in je browser.
@@ -9,7 +19,7 @@ Met de VS Code-extensie Live Server herlaadt het spel vanzelf als je iets bewaar
 ## Spelen
 Kies in het menu:
 - **Solo**: tegen de computer, met pauze.
-- **Online: host** of **Online: meedoen**: tegen een vriend (zie hieronder).
+- **Online: host** of **Online: meedoen**: met vrienden: 1 tegen 1, 2 tegen 1, 1 tegen 2, 2 tegen 2 of 2 tegen de computer. Met twee in één ploeg bestuurt elk zijn eigen helft van de kinderen.
 - **Kijken**: computer tegen computer.
 - **Oefenen**: een rondleiding voor nieuwe spelers.
 
@@ -43,7 +53,9 @@ De verbinding loopt rechtstreeks tussen jullie browsers (WebRTC via PeerJS). Op 
 - `js/13-oefenen.js`: de rondleiding voor nieuwe spelers
 - `js/14-mobiel.js`: knoppen en lade op gsm en tablet
 - `js/15-nieuwe-look.js`: de nieuwe look: scorebord, actiebalk, bevelwiel, banners, herhaling, menudemo
-- `js/16-lus.js`: de lus die alles 60 keer per seconde laat lopen
+- `js/16-god-mode.js`: extra instellingen voor de maker
+- `js/17-lus.js`: de lus die alles 60 keer per seconde laat lopen
+- `manifest.webmanifest`, `sw.js`, `icons/`: de app voor je gsm
 
 ## Nieuwe of klassieke look
 

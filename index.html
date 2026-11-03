@@ -7,6 +7,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
 <link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pakker En Loper">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 </head>
 <body>
 <header class="bar">
@@ -30,6 +39,7 @@
     <button id="statsBtn">Statistieken</button>
     <button id="soundBtn" aria-pressed="true">Geluid</button>
     <button id="keysBtn">Toetsen <kbd>K</kbd></button>
+    <button class="godonly" id="godBtn">God Mode</button>
     <button id="newBtn">Menu</button>
   </div>
 </header>
@@ -59,6 +69,7 @@
         <button data-hm="sound" aria-pressed="true">Geluid</button>
         <button data-hm="cam" aria-pressed="true">Camera volgt</button>
         <button data-hm="keys" id="hmKeys">Toetsen</button>
+        <button data-hm="god" class="godonly">God Mode</button>
         <button data-hm="look">Klassieke look</button>
         <button data-hm="menu">Naar het menu</button>
       </div>
@@ -104,6 +115,7 @@
     <div class="mrow posrow">
       <button id="mPos">Overnemen</button>
       <button id="mCam" aria-pressed="true">Camera volgt</button>
+      <button class="godonly" id="mGod">God Mode</button>
       <button id="mSound" aria-pressed="true">Geluid</button>
       <button id="mMsg">Berichten</button>
     </div>
@@ -209,7 +221,7 @@
       <p class="mtag">Het speeltijdspel, als strategiespel. Lopers moeten met één loper over lijn C, pakkers tikken.</p>
       <div class="modes" role="group" aria-label="Spel">
         <button class="mode" data-set="net" data-v="off" aria-pressed="true"><b>Solo</b><span>Tegen de computer, met pauze</span></button>
-        <button class="mode" data-set="net" data-v="host"><b>Online: host</b><span>Maak een spel en stuur je vriend de code</span></button>
+        <button class="mode" data-set="net" data-v="host"><b>Online: host</b><span>Maak een spel en stuur je vrienden de code</span></button>
         <button class="mode" data-set="net" data-v="join"><b>Online: meedoen</b><span>Doe mee met de code van je vriend</span></button>
         <button class="mode" data-set="net" data-v="watch"><b>Kijken</b><span>Computer tegen computer</span></button>
         <button class="mode" data-set="net" data-v="learn"><b>Oefenen</b><span>Leer het spel stap voor stap</span></button>
@@ -220,6 +232,11 @@
       <div class="opt" id="joinOpt" hidden>
         <label class="lbl" for="joinCode">Code van je vriend</label>
         <input id="joinCode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" style="font-family:var(--f-mono);font-size:22px;letter-spacing:.3em;text-transform:uppercase;max-width:9em">
+      </div>
+      <div class="opt" id="fmtOpt" hidden>
+        <span class="lbl">Spelers</span>
+        <div class="seg" role="group" aria-label="Spelers"><button data-set="fmt" data-v="11" aria-pressed="true">1v1</button><button data-set="fmt" data-v="21">2v1</button><button data-set="fmt" data-v="12">1v2</button><button data-set="fmt" data-v="22">2v2</button><button data-set="fmt" data-v="2c">2 v pc</button></div>
+        <span class="d" id="fmtD">Jij tegen één vriend.</span>
       </div>
       <div class="hostopts" id="hostOpts">
         <div class="opt">
@@ -278,14 +295,29 @@
   </div>
 </div>
 
+<div class="ov" id="godLock" hidden>
+  <div class="card" style="max-width:380px">
+    <h3>Wachtwoord</h3>
+    <input id="godPw" type="password" autocomplete="off" spellcheck="false">
+    <p class="neterr" id="godErr" hidden>Fout wachtwoord.</p>
+    <div class="row"><button class="go" id="godPwGo">Openen</button><button id="godPwX">Annuleren</button></div>
+  </div>
+</div>
+<div class="ov godov" id="godOv" hidden>
+  <div class="card">
+    <div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">God Mode</h3><button id="godClose">Sluiten</button></div>
+    <div id="godBody"></div>
+  </div>
+</div>
 <div class="ov" id="lobbyOv" hidden>
   <div class="card">
-    <h3>Wachten op je vriend</h3>
-    <p>Geef je vriend deze code, of stuur hem de link. Hij heeft geen account nodig.</p>
+    <h3 id="lobbyH">Wachten op je vriend</h3>
+    <p><b id="lobbyFmt">1 tegen 1</b>. Geef deze code, of stuur de link. Niemand heeft een account nodig.</p>
     <div class="code" id="lobbyCode">····</div>
     <div class="row"><input id="lobbyLink" readonly style="flex:1;min-width:0;font-family:var(--f-mono);font-size:12px"><button id="lobbyCopy">Kopieer link</button></div>
+    <div class="lseats" id="lobbySeats"></div>
     <p id="lobbyState">Verbinden met de server…</p>
-    <button id="lobbyCancel">Annuleren</button>
+    <div class="row"><button class="go" id="lobbyGo" hidden>Nu starten</button><button id="lobbyCancel">Annuleren</button></div>
   </div>
 </div>
 
@@ -360,6 +392,11 @@
 <script src="js/13-oefenen.js"></script>
 <script src="js/14-mobiel.js"></script>
 <script src="js/15-nieuwe-look.js"></script>
-<script src="js/16-lus.js"></script>
+<script src="js/16-god-mode.js"></script>
+<script src="js/17-lus.js"></script>
+<script>
+/* app op je gsm: de service worker bewaart het spel, zodat het ook zonder internet opent */
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
 </body>
 </html>

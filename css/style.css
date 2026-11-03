@@ -317,6 +317,27 @@ html.nl body.online #hPause,html.nl body.online #hSpeed{display:none}
 .pban.show{animation:pban 1.7s ease forwards}
 @keyframes pban{0%{opacity:0;transform:translate(-50%,-50%) scale(.82)}12%{opacity:1;transform:translate(-50%,-50%) scale(1)}72%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}
 @media (prefers-reduced-motion:reduce){.pban.show{animation:pbanr 1.7s steps(1) forwards}@keyframes pbanr{0%{opacity:1}100%{opacity:0}}.wheel button{transition:none}}
+/* lobby met plaatsen */
+.lseats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lseat{border:1px solid var(--rand);border-radius:12px;padding:10px 12px}
+.lseat.t0{border-color:var(--mijn)} .lseat.t1{border-color:var(--ander)}
+.lseat ul{margin:6px 0 0;padding:0;list-style:none;font-size:14px;display:flex;flex-direction:column;gap:3px;color:var(--krijt-dim,#9aa7b4)}
+.lseat li.ok{color:var(--krijt,#e6edf3)} .lseat li.ok::before{content:"● ";color:var(--groen,#3ddc84)}
+/* God Mode */
+html:not(.god) .godonly{display:none!important}
+#fmtOpt .seg{flex-wrap:wrap} #fmtOpt .seg button{white-space:nowrap}
+.godov{z-index:22;background:rgba(8,11,16,.55)}
+.godov .card{max-width:640px}
+.gcols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.gcol{border:1px solid var(--rand);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.gcol h4{margin:0;font-size:15px}
+.grow{display:flex;flex-direction:column;gap:3px;font-size:13.5px}
+.grow input{width:100%}
+.gchk{display:flex;gap:8px;align-items:center;font-size:14px}
+.gmain{font-size:17px;font-weight:600}
+.grow2{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px}
+.grow2 span{margin-left:6px}
+@media (max-width:520px){.gcols,.lseats{grid-template-columns:1fr}}
 /* herhaling */
 .rpbar{position:absolute;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:var(--glas);border:1px solid var(--geel);
   border-radius:999px;padding:5px 6px 5px 14px;font-weight:600;color:var(--geel);letter-spacing:.06em;text-transform:uppercase;font-size:12.5px}

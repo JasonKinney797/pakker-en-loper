@@ -12,7 +12,7 @@ function showReport(winner,wt,wasTb){
     for(const me of [0,1]){
       const title=`${wasTb?'Tiebreaker':'Ronde '+S.round}: punt voor ${wt===me?'jouw ploeg':'de andere ploeg'}`;
       const line=winner==='lopers'?`${ev.cross.name} raakte over C bij ${zoneOf(ev.cross.y)}.`:'Alle lopers zijn getikt.';
-      if(me===0)toastLong(title+'. '+line,5000);else netSend({t:'toast',m:title+'. '+line,ms:5000});
+      if(me===0)toastLong(title+'. '+line,5000);netTeam(me,{t:'toast',m:title+'. '+line,ms:5000});
     }
     sendStats();NET.nextAt=performance.now()+3500;syncUI();return;
   }
@@ -36,7 +36,7 @@ function showReport(winner,wt,wasTb){
 }
 function showInfoReport(title,txt){
   if(S.watch){toastLong(title+'. '+txt,4000);S.nextIn=2.5;syncUI();return;}
-  if(online()){toastLong(title+'. '+txt,5000);netSend({t:'toast',m:title+'. '+txt,ms:5000});sendStats();NET.nextAt=performance.now()+3500;syncUI();return;}
+  if(online()){toastLong(title+'. '+txt,5000);const o={t:'toast',m:title+'. '+txt,ms:5000};net2(o,o);sendStats();NET.nextAt=performance.now()+3500;syncUI();return;}
   if(S.reportsOff){nextRound();return;}
   document.getElementById('repTitle').textContent=title;
   document.getElementById('repList').innerHTML=`<li class="k">${esc(txt)}</li>`;
@@ -73,18 +73,19 @@ function onlineTiebreak(){
   const n0=tbN(0),n1=tbN(1);
   S.tbp={picks:[null,isAI(1)?cpuPick(1,n1).map(k=>k.id):null],n:[n0,n1],until:performance.now()+20000};
   openPicker(0,n0,S.tbp.until,ids=>{if(S.tbp)S.tbp.picks[0]=ids;});
-  netSend({t:'tb',n:n1,ms:20000});
+  const c1=isAI(1)?null:captain(1);if(c1)netTo(c1,{t:'tb',n:n1,ms:20000});
+  for(const st of liveSeats())if(st!==c1)netTo(st,{t:'toast',m:'Tiebreaker: '+(st.team===0?'de host':'je ploegmaat')+' kiest de kinderen.',ms:5000});
 }
 function finishOnlineTiebreak(){
   const tb=S.tbp;S.tbp=null;
   for(const t of [0,1])if(!tb.picks[t]||tb.picks[t].length!==tb.n[t])tb.picks[t]=cpuPick(t,tb.n[t]).map(k=>k.id);
   S.tb={clock:180,chosen:new Set(tb.picks[0].concat(tb.picks[1]))};
   if(S.pos&&!S.tb.chosen.has(S.pos.id))release('Je kind speelt de tiebreaker niet mee: losgelaten.');
-  if(S.rpos&&!S.tb.chosen.has(S.rpos.id))remoteRelease('Je kind speelt de tiebreaker niet mee: losgelaten.');
+  for(const st of NET.seats)if(st.rp&&!S.tb.chosen.has(st.rp.id))seatRelease(st,'Je kind speelt de tiebreaker niet mee: losgelaten.');
   document.getElementById('tbOv').hidden=true;S.pickUntil=0;
   const names=t=>tb.picks[t].map(id=>S.byId.get(id).name).join(', ');
   say(`Tiebreaker: de andere ploeg kiest ${names(1)}.`,`Tiebreaker: de andere ploeg kiest ${names(0)}.`);
-  netSend({t:'tbclose'});
+  net2({t:'tbclose'},{t:'tbclose'});
   startRound();buildRoster();syncUI();
 }
 function watchTiebreak(){
@@ -124,8 +125,8 @@ function log(html){html=persp(html);const li=document.createElement('li');li.inn
 function toast(t){toastLong(t,3200);}
 function toastLong(t,ms){if(S.demo)return;t=persp(t);const el=document.createElement('div');el.className='toast';el.textContent=t;document.getElementById('toasts').prepend(el);setTimeout(()=>el.remove(),ms||3200);}
 /* een bericht voor beide spelers: h0 voor jou, h1 voor je vriend (zelfde als h0 als je niets opgeeft) */
-function say(h0,h1){log(h0);if(isHost())netSend({t:'log',h:h1===undefined?h0:h1});}
-function logTeam(t,h){if(t===0)log(h);else if(isHost())netSend({t:'log',h});}
+function say(h0,h1){log(h0);if(isHost())net2({t:'log',h:h0},{t:'log',h:h1===undefined?h0:h1});}
+function logTeam(t,h){if(t===0)log(h);netTeam(t,{t:'log',h});}
 /* geluid voor beide spelers, vanuit ieders eigen kant */
 /* korte melding bovenaan het veld. c: ploeg (0/1) voor de kleur, of 'mg' voor geel */
 function feedShow(txt,c){if(S.demo)return;
@@ -139,13 +140,13 @@ function banner(txt,cls){
   if(!NL()||S.demo)return;const el=document.getElementById('pban');if(!el)return;
   el.textContent=persp(txt);el.className='pban '+(cls||'');void el.offsetWidth;el.classList.add('show');
 }
-function bannerAll(t0,c0,t1,c1){banner(t0,c0);if(isHost())netSend({t:'bn',x:t1===undefined?t0:t1,c:c1===undefined?c0:c1});}
-function feedAll(txt,c){feedShow(txt,c);if(isHost())netSend({t:'feed',x:txt,c:typeof c==='number'?c^1:c});}
+function bannerAll(t0,c0,t1,c1){banner(t0,c0);if(isHost())net2({t:'bn',x:t0,c:c0},{t:'bn',x:t1===undefined?t0:t1,c:c1===undefined?c0:c1});}
+function feedAll(txt,c){feedShow(txt,c);if(isHost())net2({t:'feed',x:txt,c},{t:'feed',x:txt,c:typeof c==='number'?c^1:c});}
 const CHAT=['Goed gespeeld!','Te traag!','Bijna!','Revanche?','Oeps.','Kom maar op!'];
 let chatT=0;
 function chatSend(i){
   if(!online()||performance.now()-chatT<1500)return;chatT=performance.now();
-  netSend({t:'msg',i});chatShow(i,true);document.getElementById('msgBox').hidden=true;
+  if(isHost())for(const st of liveSeats())netTo(st,{t:'msg',i});else netSend({t:'msg',i});chatShow(i,true);document.getElementById('msgBox').hidden=true;
 }
 function chatShow(i,mine){
   const t=CHAT[i];if(!t)return;
@@ -156,14 +157,15 @@ function chatShow(i,mine){
   setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.remove(),450);},4500);
 }
 function sfx(n,a){
-  if(n==='tag'){SFX.tag(a);if(isHost())netSend({t:'sfx',n,a:a^1});return;}
-  if(n==='miss'){SFX.miss(a);if(isHost())netSend({t:'sfx',n});return;}
-  SFX[n](a);if(isHost())netSend({t:'sfx',n,a});
+  if(n==='tag'){SFX.tag(a);net2({t:'sfx',n,a},{t:'sfx',n,a:a^1});return;}
+  if(n==='miss'){SFX.miss(a);net2({t:'sfx',n},{t:'sfx',n});return;}
+  SFX[n](a);net2({t:'sfx',n,a},{t:'sfx',n,a});
 }
 /* zwevende tekst; de gast krijgt hem alleen als hij dat kind kan zien */
 function fx(k,txt){S.floats.push({x:k.x,y:k.y,t:S.time,txt});
   if(txt==='getikt')S.edge.push({x:k.x,y:k.y,t:performance.now(),c:k.team^1});
-  if(isHost()&&(k.team===1||S.vis1.has(k.id)||txt==='getikt'))netSend({t:'fx',x:k.x,y:k.y,txt});}
+  if(isHost()){const o={t:'fx',x:k.x,y:k.y,txt};
+    if(k.team===1||S.vis1.has(k.id)||txt==='getikt')netTeam(1,o);if(k.team===0||S.visT0.has(k.id)||txt==='getikt')netTeam(0,o);}}
 function toggleKeys(on){document.getElementById('keysOv').hidden=!on;if(on&&!S.paused&&!S.over&&!online()){S.paused=true;S._keysPaused=true;}else if(!on&&S._keysPaused){S.paused=false;S._keysPaused=false;}syncUI();}
 const ROLE_TXT={jager:'jager',bewaker:'bewaker',muur:'muur',boogman:'boogman',vangnet:'vangnet',sneaker:'sneaker',lokaas:'lokaas'};
 const ORD_TXT={guard:'bewaakt B',move:'ga naar',attack:'aanval',follow:'volgt',cover:'dekt',inout:'in-uit',hold:'houdt positie',net:'vangnet'};
@@ -178,7 +180,7 @@ function kidStatus(k){
 }
 function buildRoster(){
   const box=document.getElementById('roster');
-  const mine=S.kids.filter(k=>k.team===0||S.watch).sort((a,b)=>a.team-b.team||b.top-a.top);
+  const mine=S.kids.filter(k=>myKid(k)||S.watch).sort((a,b)=>a.team-b.team||b.top-a.top);
   box.innerHTML=mine.map(k=>`<button data-kid="${k.id}"><span class="n">${S.watch?`<i class="tdot" style="background:var(${k.team?'--ander':'--mijn'})"></i>`:''}${esc(k.name)}</span><span class="sp">${k.top.toFixed(2)}</span><span class="st" data-st="${k.id}"></span></button>`).join('');
   document.getElementById('teamSize').textContent=S.watch?'beide ploegen · m/s':`${mine.length} kinderen · m/s`;
   document.querySelector('[data-tab="team"] h2').firstChild.textContent=S.watch?'Ploegen ':'Jouw ploeg ';
@@ -267,11 +269,13 @@ document.querySelectorAll('[data-set]').forEach(b=>b.addEventListener('click',()
   if(key==='mode'){S.set.mode=v;document.getElementById('modeD').textContent=DESC.mode[v];}
   if(key==='realism'){S.set.realism=v==='1';document.getElementById('realD').textContent=DESC.realism[v];}
   if(key==='start')S.set.start=v;
+  if(key==='fmt'){S.set.fmt=v;document.getElementById('fmtD').textContent=FMT_D[v];}
   if(key==='net')setNetChoice(v);
   if(key==='look')setLook(v);
   if(key==='bell'){S.set.bell=+v;document.getElementById('bellD').textContent=+v?'Bij de bel wint de ploeg met de meeste punten.':'Het spel loopt door tot je zelf stopt.';}
 }));
 let netChoice='off';
+const FMT_D={'11':'Jij tegen één vriend.','21':'Jij en een vriend samen tegen één vriend. Wie alleen speelt, krijgt evenveel kinderen. Elk van het duo bestuurt zijn eigen helft.','12':'Jij alleen tegen twee vrienden. Zij hebben elk hun eigen helft, jij hebt de hele ploeg.','22':'Twee tegen twee. Iedereen bestuurt zijn eigen helft van zijn ploeg.','2c':'Jij en een vriend samen tegen de computer. Elk bestuurt zijn eigen helft.'};
 {const r=document.getElementById('kidCount');const upd=()=>{const n=+r.value;S.set.count=n;document.getElementById('kidCountV').textContent=n;
   document.getElementById('kidCountD').textContent=`${Math.ceil(n/2)} tegen ${Math.floor(n/2)}`;};r.addEventListener('input',upd);upd();}
 function setWatch(on){
@@ -285,9 +289,10 @@ function setNetChoice(v){
   netChoice=v;netErr('');
   document.querySelectorAll('[data-set="net"]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===v)));
   document.getElementById('joinOpt').hidden=v!=='join';
+  document.getElementById('fmtOpt').hidden=v!=='host';
   document.getElementById('hostOpts').hidden=v==='join'||v==='watch'||v==='learn';
   document.getElementById('gameOpts').hidden=v==='join'||v==='learn';
-  document.getElementById('netD').textContent={off:'Jij tegen de computer, met pauze.',host:'Jij maakt het spel aan en kiest de instellingen. Je krijgt een code voor je vriend. Online is er geen pauze.',join:'Tik de code van je vriend in. Hij kiest de instellingen.',learn:'Een rondleiding van een paar minuten tegen een zwakke computer: selecteren, bevelen, het tactiekbord, overnemen en scoren.',watch:'Twee computerploegen spelen tegen elkaar en leren van elkaar. Jij kijkt, met het hele veld zichtbaar. Pauzeren en versnellen tot 4× kan.'}[v];
+  document.getElementById('netD').textContent={off:'Jij tegen de computer, met pauze.',host:'Jij maakt het spel aan en kiest de instellingen. Je krijgt een code voor je vrienden. Online is er geen pauze.',join:'Tik de code van je vriend in. Hij kiest de instellingen.',learn:'Een rondleiding van een paar minuten tegen een zwakke computer: selecteren, bevelen, het tactiekbord, overnemen en scoren.',watch:'Twee computerploegen spelen tegen elkaar en leren van elkaar. Jij kijkt, met het hele veld zichtbaar. Pauzeren en versnellen tot 4× kan.'}[v];
   document.getElementById('startBtn').textContent={off:'Naar de speelplaats',host:'Spel aanmaken',join:'Meedoen',watch:'Kijken',learn:'Start de rondleiding'}[v];
 }
 document.getElementById('startBtn').addEventListener('click',()=>{

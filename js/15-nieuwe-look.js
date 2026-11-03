@@ -66,7 +66,7 @@ function kidNL(k,X,Y,r,fdt,pak){
   ctx.fillStyle='rgba(0,0,0,.32)';ctx.beginPath();ctx.ellipse(X+r*.18,Y+r*.3,r*1.02,r*.78,0,0,7);ctx.fill();
   if(!pr&&mv>.35){const sw=Math.sin(ph)*r*.55;ctx.fillStyle='#0b0f15';
     for(const sd of [-1,1]){const lx=X+px*sd*r*.32+c*sw*sd,ly=Y+py*sd*r*.32+s*sw*sd;ctx.beginPath();ctx.ellipse(lx,ly,r*.27,r*.2,f,0,7);ctx.fill();}}
-  ctx.fillStyle=pr?'#4b5565':teamCol(k.team);
+  ctx.fillStyle=pr?'#4b5565':k.notMine?'#a5dcf5':teamCol(k.team);   // kinderen van je ploegmaat: lichter blauw
   ctx.beginPath();ctx.ellipse(X-c*r*.08,Y-s*r*.08,r*.56,r*1.0,f,0,7);ctx.fill();
   ctx.strokeStyle='rgba(0,0,0,.28)';ctx.lineWidth=1;ctx.stroke();
   if(pak&&!bench){ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=Math.max(1.6,.075*SC);ctx.stroke();}
@@ -225,7 +225,7 @@ function holdAt(w,ks){
 function openWheel(px,py,w){
   if(!NL()||S.watch||!S.started||S.rp)return;
   const tol=TOUCH?touchTol():.8;
-  const en=enemyAt(w,tol+.05),own=pickKid(w,k=>k.team===0&&k.status==='active',tol);
+  const en=enemyAt(w,tol+.05),own=pickKid(w,k=>myKid(k)&&k.status==='active',tol);
   let ks=selected();
   if(!ks.length&&own){S.sel=new Set([own.id]);ks=[own];}
   if(!ks.length){toast(TOUCH?'Tik eerst op een kind.':'Kies eerst een kind.');return;}
@@ -268,6 +268,7 @@ hmenuEl.addEventListener('click',e=>{const b=e.target.closest('[data-hm]');if(!b
   else if(a==='cam'){S.camFollow=!S.camFollow;if(!S.camFollow){SC=FIT.SC;OX=FIT.OX;OY=FIT.OY;}syncUI();}
   else if(a==='keys'){closeHMenu();toggleKeys(true);}
   else if(a==='look'){closeHMenu();setLook('klassiek');}
+  else if(a==='god'){closeHMenu();openGod();}
   else if(a==='menu'){closeHMenu();document.getElementById('newBtn').click();}
 });
 document.addEventListener('pointerdown',e=>{if(hmenuOpen()&&!e.target.closest('#hMenuPop,#hMenu'))closeHMenu();if(wheelOpen()&&!e.target.closest('#wheel'))closeWheel();},true);
@@ -277,7 +278,7 @@ document.getElementById('hPause').addEventListener('click',()=>{S._sheetPaused=f
 document.getElementById('hSpeed').addEventListener('click',()=>setSpeed(S.watch?(S.speed===1?2:S.speed===2?4:S.speed===4?.5:1):(S.speed===1?2:S.speed===2?.5:1)));
 document.getElementById('dReady').addEventListener('click',playerReady);
 document.getElementById('dCd').addEventListener('click',playerCountdown);
-function teamForm(f){if(!selected().length)S.sel=new Set(S.kids.filter(k=>k.team===0&&k.status==='active'&&k.ctrl!=='mens').map(k=>k.id));applyForm(f,S.queue);}
+function teamForm(f){if(!selected().length)S.sel=new Set(S.kids.filter(k=>myKid(k)&&k.status==='active'&&k.ctrl!=='mens').map(k=>k.id));applyForm(f,S.queue);}
 document.getElementById('dCharge').addEventListener('click',()=>teamForm('charge'));
 document.getElementById('dHome').addEventListener('click',()=>teamForm('home'));
 document.getElementById('dPos').addEventListener('click',togglePossess);
@@ -294,7 +295,7 @@ selCardEl.addEventListener('click',e=>{const b=e.target.closest('[data-sa]');if(
   else if(a==='stop'){ks.forEach(k=>k.orders=[]);}
   else if(a==='pos'){togglePossess();}
   else if(['follow','cover','inout','move','attack'].includes(a)){setDraw(null);setCmd(a);}
-  else if(a==='all'){S.sel=new Set(S.kids.filter(k=>k.team===0&&k.status==='active').map(k=>k.id));}
+  else if(a==='all'){S.sel=new Set(S.kids.filter(k=>myKid(k)&&k.status==='active').map(k=>k.id));}
   syncUI();});
 function renderSelCard(){
   const ks=selected();
@@ -322,7 +323,8 @@ function renderSelCard(){
 function syncNL(){
   if(!NL())return;
   const t=id=>document.getElementById(id);
-  const n0=S.watch?'Blauw':'Jij',n1=S.watch?'Oranje':(online()?'Vriend':'Computer');
+  const tc=NET.tc||[1,1];
+  const n0=S.watch?'Blauw':(online()&&tc[0]>1?'Jullie':'Jij'),n1=S.watch?'Oranje':(online()?(tc[1]===0?'Computer':tc[1]>1?'Vrienden':'Vriend'):'Computer');
   t('sbN0').textContent=n0;t('sbN1').textContent=n1;
   t('sbS0').textContent=S.score[0];t('sbS1').textContent=S.score[1];
   const rl=r=>r==='lopers'?'loopt':'pakt';t('sbR0').textContent=rl(S.role[0]);t('sbR1').textContent=rl(S.role[1]);

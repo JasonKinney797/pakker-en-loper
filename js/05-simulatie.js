@@ -76,16 +76,16 @@ function tagsAndEnd(){
     // aanraken is tikken: lichamen die elkaar raken, altijd en zonder wachttijd
     // een geslaagde tik kost wel even tijd: één loper tegelijk; een mislukte poging blokkeert aanraken niet
     let touch=null;
-    if(S.time-(p.lastOK||-9)>=TAG_CD)for(const l of lop){if(tagged.has(l.id)||safe(l))continue;if(hyp(l.x-p.x,l.y-p.y)<=CONTACT){touch=l;break;}}
+    if(S.time-(p.lastOK||-9)>=TAG_CD)for(const l of lop){if(tagged.has(l.id)||safe(l)||godInv(l))continue;if(hyp(l.x-p.x,l.y-p.y)<=CONTACT){touch=l;break;}}
     if(touch){tagged.set(touch.id,p);p.tagCD=S.time+TAG_CD;p.lastOK=S.time;continue;}
     if(p.ctrl==='mens'){   // je tikt zelf
-      const pq=(S.pos&&S.pos.id===p.id)?S.pos:(S.rpos&&S.rpos.id===p.id)?S.rpos:null;
+      const ps=seatOfKid(p.id),pq=(S.pos&&S.pos.id===p.id)?S.pos:ps?ps.rp:null;
       if(pq&&pq.tagReq){pq.tagReq=false;
         if(p.tagCD<=S.time){
           let tb=null,tbd=1e9;
-          for(const l of lop){if(tagged.has(l.id)||safe(l))continue;const d=hyp(l.x-p.x,l.y-p.y);if(d<=p.reach&&d<tbd){tbd=d;tb=l;}}
+          for(const l of lop){if(tagged.has(l.id)||safe(l)||godInv(l))continue;const d=hyp(l.x-p.x,l.y-p.y);if(d<=p.reach&&d<tbd){tbd=d;tb=l;}}
           if(tb){p.tagCD=S.time+TAG_CD;
-            if(rand()<tagProb(p,tb,Math.max(tbd,.01))){tagged.set(tb.id,p);p.lastOK=S.time;if(p.team===0)buzz(25);else netSend({t:'buzz',p:25});}
+            if(rand()<tagProb(p,tb,Math.max(tbd,.01))){tagged.set(tb.id,p);p.lastOK=S.time;buzzKid(p,25);}
             else{S.ev.miss[p.team]++;p.st.miss++;fx(tb,'net niet');sfx('miss',p.team);}
           }else fx(p,'te ver');
         }}
@@ -93,7 +93,7 @@ function tagsAndEnd(){
     }
     if(p.tagCD>S.time)continue;
     let best=null,bd=1e9;
-    for(const l of lop){if(tagged.has(l.id)||safe(l))continue;const d=hyp(l.x-p.x,l.y-p.y);if(d<=p.reach&&d<bd){bd=d;best=l;}}
+    for(const l of lop){if(tagged.has(l.id)||safe(l)||godInv(l))continue;const d=hyp(l.x-p.x,l.y-p.y);if(d<=p.reach&&d<bd){bd=d;best=l;}}
     if(!best)continue;
     // het moment kiezen: komt de loper nog dichterbij en zit hij aan de rand, dan wacht een slim kind
     const ux=(best.x-p.x)/bd,uy=(best.y-p.y)/bd,closing=(best.vx-p.vx)*ux+(best.vy-p.vy)*uy<-.05;
@@ -117,7 +117,7 @@ function tagsAndEnd(){
   for(const [id,p] of tagged){
     const l=S.byId.get(id);l.status='prisoner';l.pIdx=pi++;l.orders=[];l.vx=l.vy=0;
     if(S.pos&&S.pos.id===l.id){buzz([40,40,40]);release(`<b>${l.name}</b> is getikt. Je laat los en stuurt de rest weer van bovenaf.`);}
-    if(S.rpos&&S.rpos.id===l.id){netSend({t:'buzz',p:[40,40,40]});remoteRelease(`<b>${l.name}</b> is getikt. Je laat los en stuurt de rest weer van bovenaf.`);}
+    {const ls=seatOfKid(l.id);if(ls){netTo(ls,{t:'buzz',p:[40,40,40]});seatRelease(ls,`<b>${l.name}</b> is getikt. Je laat los en stuurt de rest weer van bovenaf.`);}}
     S.ev.tags.push({p:p.name,l:l.name,y:l.y,t:S.rt,pt:p.team});
     p.st.tags++;l.st.got++;sfx('tag',p.team);S.marks.push([+l.x.toFixed(1),+l.y.toFixed(1),p.team,'t']);
     feedAll(`${p.name} tikt ${l.name}`,p.team);
@@ -142,9 +142,9 @@ function endRound(winner,crosser){
   if(winner==='lopers'){S.ev.cross={name:crosser.name,y:crosser.y,team:L};crosser.st.cross++;S.marks.push([35,+crosser.y.toFixed(1),L,'c']);
     feedAll(`${crosser.name} is over C!`,L);if(isAI(P))S.hists[P].lScoresY.push(crosser.y);}
   if(isAI(L))recordBoog(L);
-  learnRound(winner);
+  if(!S.godUsed)learnRound(winner);   // niet leren uit God Mode-spellen
   S.pendingSwap=winner==='pakkers';
-  SFX.point(wt===0);if(isHost())netSend({t:'sfx',n:'point',a:wt===1});
+  SFX.point(wt===0);net2({t:'sfx',n:'point',a:wt===0},{t:'sfx',n:'point',a:wt===1});
   for(const k of S.kids)if(k.status!=='bench')k.st.rounds++;
   const who=wt===0?'jouw ploeg':'de andere ploeg';
   const msg=w=>winner==='lopers'?`<b>${crosser.name}</b> is over C bij ${zoneOf(crosser.y)}. Punt voor ${w}.`:`Alle lopers getikt. Punt voor ${w}.`;
@@ -166,7 +166,7 @@ function cpuReady(T){
   if(S.role[T]==='lopers'||S.setupT>20)return true;
   return S.kids.every(k=>k.team!==T||k.status!=='active'||hyp(k.vx,k.vy)<.4||(k.intent&&hyp(k.intent.x-k.x,k.intent.y-k.y)<1));
 }
-function playerReady(){if(!S.setup||S.ready[0]||S.over)return;if(isGuest()){netSend({t:'ready'});return;}S.ready[0]=true;say('Jouw ploeg is <b>klaar</b>.','De andere ploeg is <b>klaar</b>.');syncUI();}
+function playerReady(){if(!S.setup||S.ready[0]||S.over)return;if(isGuest()){netSend({t:'ready'});return;}if(isHost()){seatReady(NET.seats[0]);return;}S.ready[0]=true;say('Jouw ploeg is <b>klaar</b>.','De andere ploeg is <b>klaar</b>.');syncUI();}
 function step(dt){
   if(S.over)return;
   if(S.bell>0){
@@ -252,9 +252,9 @@ function renderEnd(d,host){
   document.getElementById('endOv').hidden=false;
 }
 function showEnd(){
-  if(S.pos)release(null);if(S.rpos)remoteRelease(null);
+  if(S.pos)release(null);remoteReleaseAll(null);
   renderEnd(endData(0),!isGuest());
-  if(isHost()){sendStats();netSend({t:'end',d:endData(1)});}
+  if(isHost()){sendStats();net2({t:'end',d:endData(0)},{t:'end',d:endData(1)});}
   syncUI();
 }
 function endAction(kind){
