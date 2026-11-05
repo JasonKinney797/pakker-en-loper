@@ -91,15 +91,21 @@ function chargeTo(k,wx,gy){k.ai.role='charge';k.ai.wx=wx;k.ai.tx=35.8;k.ai.ty=gy
    Lokaas twijfelt nooit. */
 const HZ={   // in = seconden in en uit, zij = seconden zijwaarts zoeken, terug = seconden achteraan voor een nieuwe poging
   slim:{in:3.2,zij:4.5,terug:5},boven:{in:2.8,zij:4,terug:6},gem:{in:2.4,zij:3.5,terug:8},onder:{in:2,zij:3,terug:10},dom:{in:1.5,zij:2.5,terug:12}};
-let HZ_COVER=.6,HZ_DEC=7,HZ_LOK=.02,HZ_OVER=1,HZ_HERD=12,HZ_IN=2.7,HZ_EV=1.2;   // afgesteld met honderden rondes computer tegen computer   // hoeveel een pakker zijwaarts nog kan dichtlopen (m), afstand tot de muur waarop een loper beslist (m)
+let HZ_COVER=.6,HZ_DEC=4.5,HZ_LOK=.005,HZ_OVER=1,HZ_HERD=4,HZ_IN=2.7,HZ_EV=1.2;   // afgesteld met honderden rondes computer tegen computer   // hoeveel een pakker zijwaarts nog kan dichtlopen (m), afstand tot de muur waarop een loper beslist (m)
 function hzOn(k){return isLoper(k)&&lv(k)!==LV.perfect&&!k.ai.bait&&activeRole(k)!=='lokaas'&&k.ai.role!=='decoy';}
 function hzCount(n){(S.hzc||(S.hzc={}))[n]=((S.hzc||{})[n]||0)+1;}
 /* de muur vóór mij: pakkers tussen mij en C */
 function hzWall(k){
-  const ps=known(k).filter(e=>e.x>k.x+.3&&!safe(e.o));
-  if(!ps.length)return null;
+  const all=known(k).filter(e=>e.x>k.x+.3&&!safe(e.o));
+  if(!all.length)return null;
+  // de eerste echte lijn: minstens twee pakkers naast elkaar, of iemand vlak voor C. Een losse jager is geen muur (daar ontwijk je gewoon).
+  all.sort((a,b)=>a.x-b.x);
+  let near=null;
+  for(const e of all){if(e.x>24||all.filter(o=>o.x>=e.x&&o.x<=e.x+3).length>=2){near=e.x;break;}}
+  if(near==null)return null;
+  const ps=all.filter(e=>e.x>=near&&e.x<=near+3);
   const xs=ps.map(e=>e.x).sort((a,b)=>a-b);
-  return {x:xs[Math.floor(xs.length/2)],near:xs[0],ps};
+  return {x:xs[Math.floor(xs.length/2)],near,far:xs[xs.length-1],ps};
 }
 /* een gat in de muur dat dit kind ziet, zo dicht mogelijk bij hoogte y (of null) */
 function hzGap(k,W,y,maxDy){
@@ -120,7 +126,7 @@ function hzGap(k,W,y,maxDy){
 }
 /* gaat door het gat; kinderen die vlakbij twijfelen, springen mee */
 function hzCommit(k,W,g,herd){
-  const h=k.ai.hz;h.st='door';h.y=g.y;h.wx=Math.max(W.x,W.near)+.8;hzCount(herd?'herd':'commit');
+  const h=k.ai.hz;h.st='door';h.y=g.y;h.wx=W.far+.8;hzCount(herd?'herd':'commit');
   if(herd)return;
   for(const o of S.kids){
     if(o===k||o.team!==k.team||o.status!=='active'||!o.ai.hz||o.ai.hz.st==='door')continue;
@@ -133,7 +139,7 @@ function hzStep(k,tx,ty){
   let h=k.ai.hz;
   if(!h||h.tx!==tx||h.ty0!==ty)h=k.ai.hz={st:'gaan',t:S.time,tx,ty0:ty,y:ty,scan:0};
   if(h.st==='door'){
-    if(k.x>h.wx-.2)return false;
+    if(k.x>h.wx-.2){h.st='gaan';h.go=null;return false;}   // erdoor: bij de volgende lijn opnieuw kijken
     go(k,h.wx,h.y,'sprint');return true;
   }
   const W=hzWall(k);
