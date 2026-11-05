@@ -73,7 +73,7 @@ function onlineTiebreak(){
   const n0=tbN(0),n1=tbN(1);
   S.tbp={picks:[null,isAI(1)?cpuPick(1,n1).map(k=>k.id):null],n:[n0,n1],until:performance.now()+20000};
   openPicker(0,n0,S.tbp.until,ids=>{if(S.tbp)S.tbp.picks[0]=ids;});
-  const c1=isAI(1)?null:captain(1);if(c1)netTo(c1,{t:'tb',n:n1,ms:20000});
+  const c1=isAI(1)?null:seatCaptain(1);if(c1)netTo(c1,{t:'tb',n:n1,ms:20000});
   for(const st of liveSeats())if(st!==c1)netTo(st,{t:'toast',m:'Tiebreaker: '+(st.team===0?'de host':'je ploegmaat')+' kiest de kinderen.',ms:5000});
 }
 function finishOnlineTiebreak(){
