@@ -83,6 +83,110 @@ function gaps(k){
   return g;
 }
 function chargeTo(k,wx,gy){k.ai.role='charge';k.ai.wx=wx;k.ai.tx=35.8;k.ai.ty=gy;}
+/* ---- Twijfelen bij een aanval (zoals op de echte speelplaats) ----
+   Een loper die niet perfect is (de computer, en jouw kinderen met realisme aan) loopt niet blind in de muur.
+   Vlak voor de muur kijkt hij: is er een gat (afstand tussen twee pakkers, of een muur die beweegt)? Dan gaat hij erdoor.
+   Geen gat: eerst in en uit aan de muur, dan zijwaarts zoeken, en als er echt niets is terug (naar B, of achteraan als B
+   niet meer veilig is). Komt er een gat, dan gaat hij opnieuw. Wie in de buurt is, volgt zonder nadenken.
+   Lokaas twijfelt nooit. */
+const HZ={   // in = seconden in en uit, zij = seconden zijwaarts zoeken, terug = seconden achteraan voor een nieuwe poging
+  slim:{in:3.2,zij:4.5,terug:5},boven:{in:2.8,zij:4,terug:6},gem:{in:2.4,zij:3.5,terug:8},onder:{in:2,zij:3,terug:10},dom:{in:1.5,zij:2.5,terug:12}};
+let HZ_COVER=.6,HZ_DEC=7,HZ_LOK=.02,HZ_OVER=1,HZ_HERD=12,HZ_IN=2.7,HZ_EV=1.2;   // afgesteld met honderden rondes computer tegen computer   // hoeveel een pakker zijwaarts nog kan dichtlopen (m), afstand tot de muur waarop een loper beslist (m)
+function hzOn(k){return isLoper(k)&&lv(k)!==LV.perfect&&!k.ai.bait&&activeRole(k)!=='lokaas'&&k.ai.role!=='decoy';}
+function hzCount(n){(S.hzc||(S.hzc={}))[n]=((S.hzc||{})[n]||0)+1;}
+/* de muur vóór mij: pakkers tussen mij en C */
+function hzWall(k){
+  const ps=known(k).filter(e=>e.x>k.x+.3&&!safe(e.o));
+  if(!ps.length)return null;
+  const xs=ps.map(e=>e.x).sort((a,b)=>a-b);
+  return {x:xs[Math.floor(xs.length/2)],near:xs[0],ps};
+}
+/* een gat in de muur dat dit kind ziet, zo dicht mogelijk bij hoogte y (of null) */
+function hzGap(k,W,y,maxDy){
+  const L=lv(k);
+  // instabiliteit: waar de pakkers heen bewegen telt; wie uit de muur gestapt is en nog beweegt, dekt zijn plek niet meer
+  const pts=[];
+  for(const e of W.ps){
+    const sp=hyp(e.vx,e.vy);
+    if(e.x<W.x-1.6&&sp>1)continue;
+    pts.push({y:clamp(e.y+e.vy*.45,0,25),r:e.o.reach+HZ_COVER*(sp>2.5?.5:1)});
+  }
+  pts.sort((a,b)=>a.y-b.y);
+  const g=[];let lo=0;
+  for(const p of pts){const w=(p.y-p.r)-lo;if(w>0)g.push({y:lo+w/2,w});lo=Math.max(lo,p.y+p.r);}
+  if(25-lo>0)g.push({y:lo+(25-lo)/2,w:25-lo});
+  const ok=g.filter(e=>e.w>=L.gap&&Math.abs(e.y-y)<=maxDy).sort((a,b)=>Math.abs(a.y-y)-Math.abs(b.y-y));
+  return ok[0]||null;
+}
+/* gaat door het gat; kinderen die vlakbij twijfelen, springen mee */
+function hzCommit(k,W,g,herd){
+  const h=k.ai.hz;h.st='door';h.y=g.y;h.wx=Math.max(W.x,W.near)+.8;hzCount(herd?'herd':'commit');
+  if(herd)return;
+  for(const o of S.kids){
+    if(o===k||o.team!==k.team||o.status!=='active'||!o.ai.hz||o.ai.hz.st==='door')continue;
+    if(hyp(o.x-k.x,o.y-k.y)<HZ_HERD){const Wo=hzWall(o);if(Wo)hzCommit(o,Wo,{y:clamp(g.y+(rand()-.5)*.8,.6,24.4)},true);}
+  }
+}
+/* geeft true als het twijfelen de beweging bepaalt; false = gewoon doorlopen (nog ver van de muur, of door een gat) */
+function hzStep(k,tx,ty){
+  const L=lv(k),Z=HZ[k.level]||HZ.gem;
+  let h=k.ai.hz;
+  if(!h||h.tx!==tx||h.ty0!==ty)h=k.ai.hz={st:'gaan',t:S.time,tx,ty0:ty,y:ty,scan:0};
+  if(h.st==='door'){
+    if(k.x>h.wx-.2)return false;
+    go(k,h.wx,h.y,'sprint');return true;
+  }
+  const W=hzWall(k);
+  if(h.st==='terug')return hzBack(k,h,L,Z,W);
+  if(!W||k.x>W.near+.4){h.st='gaan';return false;}   // geen pakkers meer vóór mij
+  const close=W.near-k.x<=HZ_DEC;
+  if(h.st==='gaan'){
+    if(!close){if(h.go!=null){go(k,W.near-1,h.go,'sprint');return true;}return false;}
+    const g=hzGap(k,W,k.y,2.2);
+    if(g){hzCommit(k,W,g);return hzStep(k,tx,ty);}
+    h.st='inuit';h.t=S.time;h.ph='in';h.pt=S.time;hzCount('probe');
+  }
+  // om de zoveel tijd opnieuw kijken (slimme kinderen vaker)
+  h.scan-=.1;
+  if(h.scan<=0){h.scan=L.scan*.35;
+    const g=hzGap(k,W,k.y,h.st==='zij'?3.5:2.2);
+    if(g){hzCommit(k,W,g);return hzStep(k,tx,ty);}
+  }
+  // gevaar: een pakker die op mij af komt
+  const n=nearest(k,known(k));
+  if(n&&((n.d<lv(k).danger*HZ_EV&&(n.e.vx*(k.x-n.e.x)+n.e.vy*(k.y-n.e.y))>n.d*1.5)||n.d<n.e.o.reach+.5)){   // een pakker die op mij af komt: weg
+    let ax=k.x-n.e.x,ay=k.y-n.e.y;const l=hyp(ax,ay)||1;go(k,clamp(k.x+ax/l*2.5-1,.5,34),clamp(k.y+ay/l*2.5,.6,24.4),'sprint');return true;}
+  if(h.st==='inuit'){
+    if(S.time-h.t>Z.in){h.st='zij';h.t=S.time;hzCount('slide');
+      // kant kiezen: waar de pakkers het verst uit elkaar staan
+      const ys=W.ps.map(e=>e.y);const up=ys.filter(y=>y<k.y).length,dn=ys.filter(y=>y>k.y).length;
+      h.dir=k.y<2?1:k.y>23?-1:(up<dn?-1:up>dn?1:(rand()<.5?-1:1));}
+    else{
+      const inX=W.near-(HZ_IN+L.margin*.5),outX=W.near-HZ_IN-2.2;   // net buiten het bereik van een stap + arm
+      if(h.ph==='in'){go(k,inX,k.y,'sprint');if(k.x>=inX-.25||S.time-h.pt>1.4){h.ph='uit';h.pt=S.time;}}
+      else{go(k,outX,k.y,'jog');if(k.x<=outX+.3||S.time-h.pt>1.2){h.ph='in';h.pt=S.time;}}
+      k.look=0;return true;
+    }
+  }
+  if(h.st==='zij'){
+    if(S.time-h.t>Z.zij){h.st='terug';h.t=S.time;h.spot=null;hzCount('back');return hzBack(k,h,L,Z,W);}
+    if(k.y<1&&h.dir<0)h.dir=1;if(k.y>24&&h.dir>0)h.dir=-1;
+    go(k,W.near-HZ_IN-1.2,clamp(k.y+h.dir*2.5,.6,24.4),'jog');k.look=0;return true;
+  }
+  return false;
+}
+/* terug: naar B zolang B veilig is, anders achteraan; opnieuw als er een gat komt (of na een tijdje) */
+function hzBack(k,h,L,Z,W){
+  if(evade(k,L.danger))return true;
+  h.scan-=.1;
+  if(h.scan<=0){h.scan=L.scan*.5;
+    if(W){const g=hzGap(k,W,k.y,7);if(g){h.st='gaan';h.t=S.time;h.y=g.y;h.go=g.y;return false;}}
+  }
+  if(S.time-h.t>Z.terug){h.st='gaan';h.t=S.time;return false;}
+  if(!S.cdDone){go(k,2.5,clamp(k.y,10.6,14.4),'jog');k.look=0;return true;}
+  if(!h.spot){const n=nearest(k,known(k));h.spot={x:6.5+rand()*3,y:n?clamp(n.e.y<12.5?n.e.y+7:n.e.y-7,1.5,23.5):clamp(k.y,1.5,23.5)};}
+  go(k,h.spot.x,h.spot.y,'jog');k.look=0;return true;
+}
 
 function waitB(k){
   const s=k.ai.spot||{x:2.5,y:12.5};
@@ -94,6 +198,7 @@ function stage(k){
   go(k,k.ai.tx,k.ai.ty,'jog');k.look=0;
 }
 function charge(k){
+  if(hzOn(k)&&hzStep(k,k.ai.tx,k.ai.ty))return;
   const L=lv(k);
   if(k.ai.wx!=null&&k.x<k.ai.wx-.3){go(k,k.ai.wx,k.ai.ty,'sprint');}
   else go(k,k.ai.tx,k.ai.ty,'sprint');
@@ -115,9 +220,9 @@ function decoy(k){
     let ax=k.x-thr.e.x,ay=k.y-thr.e.y;const l=hyp(ax,ay)||1;
     go(k,clamp(k.x+ax/l*3,.5,33),clamp(k.y+ay/l*3,.6,24.4),'sprint');return;
   }
-  if(L.best>=.8||k.role2==='sneaker'){
-    const g=gaps(k).filter(g=>g.w>=L.gap&&Math.abs(g.y-k.y)<4)[0];
-    if(g&&isAI(k.team)){chargeTo(k,31.2,g.y);return charge(k);}
+  if((L.best>=.8||k.role2==='sneaker')&&rand()<HZ_LOK){   // lokaas is met zijn werk bezig: ziet maar af en toe zelf een kans
+    const W=hzWall(k),g=W&&hzGap(k,W,k.y,2);   // alleen een echt gat (zoals bij het twijfelen)
+    if(g&&isAI(k.team)){k.ai.bait=true;chargeTo(k,W.near+.8,g.y);return charge(k);}
   }
   let px,py;
   if(tgt){px=tgt.x;py=tgt.y;}
@@ -173,7 +278,7 @@ function hunter(k){
     else{go(k,clamp(c.x-2,1,33),c.y,'sprint');return;}
   }
   let t=ks.find(e=>e.o.id===k.ai.tgt);
-  if(!t||S.time-(k.ai.tgtT||0)>1.5){
+  if(!t||S.time-(k.ai.tgtT||0)>(JAG[lvKey(k)]||1.5)){
     k.ai.tgtT=S.time;
     if(ks.length){
       if(rand()<L.best){let bs=1e9;for(const e of ks){const s=hyp(e.x-k.x,e.y-k.y)-(e.x>26?4:0)-(hyp(e.vx,e.vy)<1.5?1:0);if(s<bs){bs=s;t=e;}}}
@@ -185,7 +290,11 @@ function hunter(k){
   const hs=k.ai.hspot||{x:9.5,y:12.5};if(!S.cdDone)go(k,hs.x,hs.y,'jog');else go(k,15,hs.y,'jog');
   k.look=Math.PI;
 }
-const STEP={slim:1.8,boven:1.8,gem:2.0,onder:2.4,dom:3.0,perfect:1.8};   // 2 à 3 stapjes, dom loopt te ver mee
+const STEP={slim:1.8,boven:1.8,gem:2.0,onder:2.4,dom:3.0,perfect:1.8};
+/* realisme: kans dat een muurkind te ver uitstapt naar een loper die in en uit doet (en zo een gat laat) */
+const OVER={slim:.2,boven:.4,gem:.6,onder:.75,dom:.9,perfect:0};
+/* hoe lang een jager aan zijn doelwit blijft hangen, ook als hij daarvoor te ver moet jagen */
+const JAG={slim:1.5,perfect:1.5,boven:2.2,gem:3,onder:4,dom:5};   // 2 à 3 stapjes, dom loopt te ver mee
 function lvKey(k){return (!isAI(k.team)&&!S.set.realism)?'perfect':k.level;}
 function wallHold(k,slot){
   const L=lv(k);const ks=known(k,true).filter(e=>!safe(e.o));
@@ -196,7 +305,8 @@ function wallHold(k,slot){
   let lure=null,ld=1e9;
   for(const e of ks){if(e.x<k.x+.3&&k.x-e.x<4.5&&Math.abs(e.y-k.y)<3.2){const d=hyp(e.x-k.x,e.y-k.y);if(d<ld){ld=d;lure=e;}}}
   if(lure){
-    if(k.lureT===null||k.lureId!==lure.o.id){k.lureT=S.time;k.lureId=lure.o.id;k.lured=rand()<L.lure*((S.plans[k.team]&&S.plans[k.team].disc)||1);k.called=false;}
+    if(k.lureT===null||k.lureId!==lure.o.id){k.lureT=S.time;k.lureId=lure.o.id;k.lured=rand()<L.lure*((S.plans[k.team]&&S.plans[k.team].disc)||1);k.called=false;
+      if(rand()<OVER[lvKey(k)]*HZ_OVER){k.ai.chase=lure.o.id;k.ai.chaseUntil=S.time+1.2+rand()*1.6;}}
     k.lureSeen=S.time;
     if(!k.called&&S.time-k.lureT>=L.helpAt*((S.plans[k.team]&&S.plans[k.team].disc)||1)){k.called=true;if(rand()<L.helpP)callHelp(k);}
   }else if(k.lureT!==null&&S.time-k.lureSeen>1){k.lureT=null;k.lureId=null;k.lured=false;}

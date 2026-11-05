@@ -38,13 +38,16 @@ function roleThink(k,r){
   instinct(k);
 }
 function arrived(k,x,y,r){return hyp(k.x-x,k.y-y)<r;}
+/* realisme: ook met een bevel twijfelt een loper aan de muur, als zijn doel voorbij de muur ligt */
+function hzOrder(k,o){if(!hzOn(k))return false;const W=hzWall(k);if(!W||o.x<=W.near+.5)return false;return hzStep(k,o.x,o.y);}
 function orderThink(k){
   const o=k.orders[0];
   const next=()=>{k.orders.shift();think(k);};
   switch(o.t){
-    case 'move':if(arrived(k,o.x,o.y,.35))return next();go(k,o.x,o.y,o.pace);return;
+    case 'move':if(arrived(k,o.x,o.y,.35))return next();if(hzOrder(k,o))return;go(k,o.x,o.y,o.pace);return;
     case 'attack':
       if(arrived(k,o.x,o.y,.35)||(isLoper(k)&&k.x>=CX))return next();
+      if(hzOrder(k,o))return;
       if(!isLoper(k)){const n=nearest(k,known(k).filter(e=>!safe(e.o)));if(n&&n.d<2.5){go(k,n.e.x,n.e.y,'sprint');return;}}
       go(k,o.x,o.y,'sprint');return;
     case 'follow':{

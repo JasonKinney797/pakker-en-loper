@@ -116,6 +116,7 @@ function tagsAndEnd(){
   let pi=S.kids.filter(k=>k.status==='prisoner').length;
   for(const [id,p] of tagged){
     const l=S.byId.get(id);l.status='prisoner';l.pIdx=pi++;l.orders=[];l.vx=l.vy=0;
+    if(S.hzc)hzCount('tik_'+(l.ai.hz?l.ai.hz.st+(l.ai.hz.st==='door'&&l.x>l.ai.hz.wx?'+':''):(l.ai.bait?'lokaas':l.ai.role||'-')));
     if(S.pos&&S.pos.id===l.id){buzz([40,40,40]);release(`<b>${l.name}</b> is getikt. Je laat los en stuurt de rest weer van bovenaf.`);}
     {const ls=seatOfKid(l.id);if(ls){netTo(ls,{t:'buzz',p:[40,40,40]});seatRelease(ls,`<b>${l.name}</b> is getikt. Je laat los en stuurt de rest weer van bovenaf.`);}}
     S.ev.tags.push({p:p.name,l:l.name,y:l.y,t:S.rt,pt:p.team});
@@ -139,7 +140,7 @@ function endRound(winner,crosser){
   const L=lt(),P=1-L,wt=winner==='lopers'?L:P;
   S.score[wt]++;
   const wasTb=!!S.tb;S.tb=null;
-  if(winner==='lopers'){S.ev.cross={name:crosser.name,y:crosser.y,team:L};crosser.st.cross++;S.marks.push([35,+crosser.y.toFixed(1),L,'c']);
+  if(winner==='lopers'){S.ev.cross={name:crosser.name,y:crosser.y,team:L,how:(crosser.ai.bait?'lokaas-gat':crosser.ai.role||'?')+(crosser.ai.hz?':'+crosser.ai.hz.st:'')};crosser.st.cross++;S.marks.push([35,+crosser.y.toFixed(1),L,'c']);
     feedAll(`${crosser.name} is over C!`,L);if(isAI(P))S.hists[P].lScoresY.push(crosser.y);}
   if(isAI(L))recordBoog(L);
   if(!S.godUsed)learnRound(winner);   // niet leren uit God Mode-spellen
