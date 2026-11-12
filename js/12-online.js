@@ -12,7 +12,7 @@ try{NET.gid=sessionStorage.getItem('pel-gid')||'';}catch(e){}
 if(!NET.gid){NET.gid=Math.random().toString(36).slice(2,10);try{sessionStorage.setItem('pel-gid',NET.gid);}catch(e){}}
 const seatLive=s=>s&&(s.i===0||(s.joined&&!s.gone));
 function liveSeats(t){return NET.seats.filter(s=>s.i>0&&s.joined&&!s.gone&&(t==null||s.team===t));}
-function captain(t){return NET.seats.find(s=>s.team===t&&seatLive(s))||null;}
+function seatCaptain(t){return NET.seats.find(s=>s.team===t&&seatLive(s))||null;}
 function seatOfKid(id){return NET.seats.find(s=>s.rp&&s.rp.id===id)||null;}
 function rawSend(s,o){
   try{
@@ -144,7 +144,7 @@ function seatLeft(s){
   if(s.gone)return;
   s.gone=true;s.conn=null;s.ready=false;seatRelease(s,null);
   assignOwners();
-  const mate=captain(s.team);
+  const mate=seatCaptain(s.team);
   if(mate){
     const m='Je ploegmaat is weg. Jij bestuurt nu ook zijn kinderen, tot hij terugkomt via dezelfde link.';
     if(mate.i===0){toastLong(m,6000);log(m);}else{netTo(mate,{t:'toast',m,ms:6000});netTo(mate,{t:'log',h:m});}
@@ -240,7 +240,7 @@ function hostHandle(m,s){
     case 'release':{const k=s.rp&&S.byId.get(s.rp.id);seatRelease(s,k?`Je laat <b>${k.name}</b> los.`:null);break;}
     case 'in':if(s.rp)s.rin={dx:+m.dx||0,dy:+m.dy||0,mag:clamp(+m.mag||0,0,1),jog:!!m.jog};break;
     case 'tag':if(s.rp&&!S.over)s.rp.tagReq=true;break;
-    case 'tbpick':if(S.tbp&&Array.isArray(m.ids)&&captain(s.team)===s){const ok=m.ids.filter(id=>{const k=S.byId.get(id);return k&&k.team===s.team;});
+    case 'tbpick':if(S.tbp&&Array.isArray(m.ids)&&seatCaptain(s.team)===s){const ok=m.ids.filter(id=>{const k=S.byId.get(id);return k&&k.team===s.team;});
       if(ok.length===S.tbp.n[s.team])S.tbp.picks[s.team]=ok;}break;
     case 'bye':seatLeft(s);break;
     case 'msg':chatShow(m.i,false);for(const o of liveSeats())if(o!==s)netTo(o,{t:'msg',i:m.i});break;
