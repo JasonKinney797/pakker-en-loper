@@ -56,6 +56,7 @@ De verbinding loopt rechtstreeks tussen jullie browsers (WebRTC via PeerJS). Op 
 - `js/16-god-mode.js`: extra instellingen voor de maker
 - `js/17-lus.js`: de lus die alles 60 keer per seconde laat lopen
 - `manifest.webmanifest`, `sw.js`, `icons/`: de app voor je gsm
+- `tools/balans.js`: balanstest. Laat de computer tegen zichzelf spelen en telt hoe vaak de lopers winnen: `node tools/balans.js 30 tactiek` (elke tactiek tegen elke tactiek) of `node tools/balans.js 30 ploeg` (goede/zwakke tactiek, snelle/trage ploeg, verstand). Heeft Node.js en Playwright nodig.
 
 ## Nieuwe of klassieke look
 
