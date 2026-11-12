@@ -298,11 +298,13 @@ function hunter(k){
   const hs=k.ai.hspot||{x:9.5,y:12.5};if(!S.cdDone)go(k,hs.x,hs.y,'jog');else go(k,15,hs.y,'jog');
   k.look=Math.PI;
 }
-const STEP={slim:1.8,boven:1.8,gem:2.0,onder:2.4,dom:3.0,perfect:1.8};
+const STEP={slim:1.8,boven:1.8,gem:2.0,onder:2.4,dom:3.0,perfect:1.8};   // 2 à 3 stapjes, dom loopt te ver mee
 /* realisme: kans dat een muurkind te ver uitstapt naar een loper die in en uit doet (en zo een gat laat) */
 const OVER={slim:.2,boven:.4,gem:.6,onder:.75,dom:.9,perfect:0};
 /* hoe lang een jager aan zijn doelwit blijft hangen, ook als hij daarvoor te ver moet jagen */
-const JAG={slim:1.5,perfect:1.5,boven:2.2,gem:3,onder:4,dom:5};   // 2 à 3 stapjes, dom loopt te ver mee
+const JAG={slim:1.5,perfect:1.5,boven:2.2,gem:3,onder:4,dom:5};
+/* van hoe ver een muurkind een loper ziet aankomen en meeschuift (m): een dom kind reageert pas laat */
+const SHADOW={slim:11,perfect:11,boven:10,gem:8,onder:5,dom:3};
 function lvKey(k){return (!isAI(k.team)&&!S.set.realism)?'perfect':k.level;}
 function wallHold(k,slot){
   const L=lv(k);const ks=known(k,true).filter(e=>!safe(e.o));
@@ -321,11 +323,17 @@ function wallHold(k,slot){
   // klaar-houding: stapjes naar een loper die het eigen gebied binnenkomt, en meteen terug
   const step=STEP[lvKey(k)];
   let best=null,bd=1e9;
-  for(const e of ks){const fx=e.x+e.vx*.3,fy=e.y+e.vy*.3,ds=hyp(fx-slot.x,fy-slot.y);if(ds<=step+k.reach&&ds<bd){bd=ds;best={x:fx,y:fy};}}
+  // waar is de loper als hij bij mij is? Dichtbij kort vooruit kijken, verder weg langer
+  for(const e of ks){const d0=hyp(e.x-k.x,e.y-k.y),ld=clamp(d0/(hyp(e.vx,e.vy)+k.top),.08,.45),fx=e.x+e.vx*ld,fy=e.y+e.vy*ld,ds=hyp(fx-slot.x,fy-slot.y);if(ds<=step+k.reach&&ds<bd){bd=ds;best={x:fx,y:fy};}}
   const justTried=k.tagCD-S.time>.3;
   if(best&&!justTried){const dx=best.x-slot.x,dy=best.y-slot.y,l=hyp(dx,dy)||1,m=Math.min(l,step);
     k.intent={x:slot.x+dx/l*m,y:slot.y+dy/l*m,pace:'sprint',quick:true};return;}
   if(lure&&k.lured){go(k,slot.x-.4,clamp(lure.y,slot.y-L.leash,slot.y+L.leash),'sprint');return;}
+  // meeschuiven: komt er een loper recht op mijn stuk muur af, dan ga ik alvast voor hem staan
+  {let sh=null,sd=1e9;
+   for(const e of ks){const dx=k.x-e.x;if(dx<.5||dx>SHADOW[lvKey(k)]||e.vx<1.5)continue;
+     const yAt=e.y+e.vy*Math.min(1.2,dx/e.vx);if(Math.abs(yAt-slot.y)<=1.8&&dx<sd){sd=dx;sh=yAt;}}
+   if(sh!=null){k.intent={x:slot.x,y:clamp(sh,slot.y-1.8,slot.y+1.8),pace:'sprint',quick:true};k.look=Math.PI;return;}}
   const ds=hyp(k.x-slot.x,k.y-slot.y);
   k.intent={x:slot.x,y:slot.y,pace:ds>.4?'sprint':'jog',quick:ds<step+.5};k.look=Math.PI;
 }
@@ -461,6 +469,7 @@ function captainT(T){
     P.feintUntil=0;const tY=P.cy;
     ks.forEach((k,i)=>{if(k.ai.role==='stage'){k.ai.role='charge';k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=clamp(tY+((i%3)-1)*.9,.8,24.2);}});
   }
+  if(P.tactic==='rennen'&&!P.breakout)ks.forEach(k=>{if(k.ai.role==='wacht'&&k.ai.goT!=null&&S.rt>=k.ai.goT)k.ai.role='charge';});
   if(P.tactic==='lokaas'&&!P.push&&S.rt-P.goAt>12){   // lokken heeft lang genoeg geduurd: iedereen die nog vrij is, gaat samen door
     P.push=true;
     ks.forEach((k,i)=>{if(k.x<33){k.ai.role='charge';k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=clamp(P.breachY+((i%5)-2)*.8,.8,24.2);}});
