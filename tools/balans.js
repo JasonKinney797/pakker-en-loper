@@ -1,6 +1,7 @@
 // Balanstest: laat de computer tegen zichzelf spelen en telt hoe vaak de lopers winnen.
 // Gebruik:  node tools/balans.js [rondes per vakje] [tactiek|ploeg]      (heeft Playwright nodig)
 //   tactiek: elke lopertactiek tegen elke pakkertactiek, gelijke ploegen
+//   snelheid: hoeveel snelheid uitmaakt per lopertactiek
 //   ploeg:   goede/zwakke tactiek x snelle/trage ploeg x slim/dom
 const { chromium } = require('playwright');
 const path = require('path');
@@ -32,11 +33,16 @@ const N = Number(process.argv[2] || 30), MODE = process.argv[3] || 'tactiek';
   const run = (cfg, opt) => p.evaluate(([c, n, o]) => runRounds(c, n, o), [cfg, N, opt || {}]);
   const pct = r => String(Math.round(r.w / r.n * 100)).padStart(3) + '%';
   if (MODE === 'tactiek') {
-    const LOP = ['rennen', 'concentratie', 'schijn', 'lokaas'], PAK = ['muurJager', 'muurVangnet', 'boog', 'hogeDruk', 'jaagt'];
+    const LOP = ['rennen', 'concentratie', 'groepen', 'schijn', 'lokaas'], PAK = ['muurJager', 'muurVangnet', 'boog', 'hogeDruk', 'jaagt'];
     console.log('Lopers winnen (rij = lopertactiek, kolom = pakkertactiek), gelijke ploegen, ' + N + ' rondes per vakje');
     console.log(''.padEnd(14) + PAK.map(x => x.padStart(12)).join(''));
     for (const l of LOP) { let line = l.padEnd(14);
       for (const k of PAK) { const r = await run([{ tac: 'slim', iq: 'gem', force: l }, { tac: 'slim', iq: 'gem', force: k }]); line += (pct(r) + (r.stuck ? '!' : '')).padStart(12); }
+      console.log(line); }
+  } else if (MODE === 'snelheid') {
+    console.log('Lopers winnen tegen een muur met jager: snelle lopers tegen trage pakkers, gelijk, en trage lopers tegen snelle pakkers (' + N + ' rondes)');
+    for (const l of ['rennen', 'concentratie', 'groepen', 'schijn']) { let line = l.padEnd(14);
+      for (const [a, c] of [[.5, -.5], [0, 0], [-.5, .5]]) { const r = await run([{ tac: 'slim', iq: 'gem', force: l, spd: a }, { tac: 'slim', iq: 'gem', force: 'muurJager', spd: c }]); line += pct(r).padStart(10); }
       console.log(line); }
   } else {
     const T = { 'goed+snel': { tac: 'slim', spd: .5 }, 'goed+traag': { tac: 'slim', spd: -.5 }, 'zwak+snel': { tac: 'dom', spd: .5 }, 'zwak+traag': { tac: 'dom', spd: -.5 } };
