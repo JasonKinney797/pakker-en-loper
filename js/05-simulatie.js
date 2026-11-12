@@ -59,12 +59,14 @@ function physics(){
 
 /* ---------- Tikken en einde ---------- */
 function tagProb(p,l,d){
-  const r=d/p.reach;let pr=r<=.6?.9:r<=.85?.6:.25;
+  const r=d/p.reach;let pr=r<=.6?.97:r<=.85?.9:.75;
   const ux=(l.x-p.x)/d,uy=(l.y-p.y)/d;
-  if(l.vx*ux+l.vy*uy>p.vx*ux+p.vy*uy)pr-=.15;
+  if(l.vx*ux+l.vy*uy>p.vx*ux+p.vy*uy)pr-=.12;
   if(S.time-l.lastTurn<.3)pr-=l.agi/700;
   if(!canSee(l,p))pr+=.10;
   if(p.tired||p.energy<.3)pr-=.10;
+  // verstand: een slim kind tikt op het juiste moment, een dom kind grijpt mis; een slimme loper draait net op tijd weg
+  pr+=IQ_TAG[lvKey(p)]-IQ_DODGE[lvKey(l)];
   return clamp(pr,.02,.97);
 }
 function tagsAndEnd(){
@@ -76,15 +78,15 @@ function tagsAndEnd(){
     // aanraken is tikken: lichamen die elkaar raken, altijd en zonder wachttijd
     // een geslaagde tik kost wel even tijd: één loper tegelijk; een mislukte poging blokkeert aanraken niet
     let touch=null;
-    if(S.time-(p.lastOK||-9)>=TAG_CD)for(const l of lop){if(tagged.has(l.id)||safe(l)||godInv(l))continue;if(hyp(l.x-p.x,l.y-p.y)<=CONTACT){touch=l;break;}}
-    if(touch){tagged.set(touch.id,p);p.tagCD=S.time+TAG_CD;p.lastOK=S.time;continue;}
+    if(S.time-(p.lastOK||-9)>=tagCd(p))for(const l of lop){if(tagged.has(l.id)||safe(l)||godInv(l))continue;if(hyp(l.x-p.x,l.y-p.y)<=CONTACT){touch=l;break;}}
+    if(touch){tagged.set(touch.id,p);p.tagCD=S.time+tagCd(p);p.lastOK=S.time;continue;}
     if(p.ctrl==='mens'){   // je tikt zelf
       const ps=seatOfKid(p.id),pq=(S.pos&&S.pos.id===p.id)?S.pos:ps?ps.rp:null;
       if(pq&&pq.tagReq){pq.tagReq=false;
         if(p.tagCD<=S.time){
           let tb=null,tbd=1e9;
           for(const l of lop){if(tagged.has(l.id)||safe(l)||godInv(l))continue;const d=hyp(l.x-p.x,l.y-p.y);if(d<=p.reach&&d<tbd){tbd=d;tb=l;}}
-          if(tb){p.tagCD=S.time+TAG_CD;
+          if(tb){p.tagCD=S.time+tagCd(p);
             if(rand()<tagProb(p,tb,Math.max(tbd,.01))){tagged.set(tb.id,p);p.lastOK=S.time;buzzKid(p,25);}
             else{S.ev.miss[p.team]++;p.st.miss++;fx(tb,'net niet');sfx('miss',p.team);}
           }else fx(p,'te ver');
@@ -103,7 +105,7 @@ function tagsAndEnd(){
       if(!p.eGrab)continue;
     }
     p.eKey=null;
-    p.tagCD=S.time+TAG_CD;
+    p.tagCD=S.time+tagCd(p);
     if(rand()<tagProb(p,best,Math.max(bd,.01))){tagged.set(best.id,p);p.lastOK=S.time;}
     else{S.ev.miss[P]++;p.st.miss++;fx(best,'net niet');sfx('miss',p.team);}
   }

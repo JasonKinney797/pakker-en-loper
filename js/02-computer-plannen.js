@@ -96,6 +96,7 @@ function planPakkers(cap,T){
     else if(cnt.mid>=2)tactic='muurVangnet';
     else{tactic=wpick([['muurJager',.35],['hogeDruk',.2],['muurVangnet',.25],['boog',.2]]);if(tactic==='boog')corner=rand()<.5?'onder':'boven';}
   }
+  if(S.force&&S.force.pak){tactic=S.force.pak;corner=null;if(tactic.startsWith('boog')){corner=tactic.slice(4)||(rand()<.5?'onder':'boven');tactic='boog';}}   // alleen voor de balanstest
   if(ks.length<=5&&tactic==='hogeDruk')tactic='muurJager';
   let countAt;
   if(tactic==='jaagt'){
@@ -142,8 +143,8 @@ function planLopers(cap,T){
   let tactic;
   if(lvn==='dom'||lvn==='onder')tactic='rennen';
   else if(lvn==='gem')tactic='concentratie';
-  else if(lvn==='boven')tactic=rand()<.6?'concentratie':'lokaas';
-  else tactic=boog?wpick([['lokaas',.55],['concentratie',.25],['schijn',.2]]):wpick([['concentratie',.35],['schijn',.3],['lokaas',.35]]);
+  else if(lvn==='boven')tactic=rand()<.85?'concentratie':'lokaas';
+  else tactic=boog?wpick([['lokaas',.3],['concentratie',.4],['schijn',.3]]):wpick([['concentratie',.5],['schijn',.35],['lokaas',.15]]);
   const lr=S.learn[T],tot=Object.values(lr.lop).reduce((a,s)=>a+s.n,0);
   if((lvn==='slim'||lvn==='boven')&&tot>=2){
     const wx=lr.wallX.length?35-lr.wallX.slice(-3).reduce((a,b)=>a+b,0)/Math.min(3,lr.wallX.length):3;
@@ -152,6 +153,7 @@ function planLopers(cap,T){
     for(const [k,b] of Object.entries(cand)){const s=score(lr.lop,k,tot,ex)+b+(lvn==='boven'?(rand()-.5)*.2:0);if(s>bs){bs=s;bk=k;}}
     tactic=bk;
   }
+  if(S.force&&S.force.lop)tactic=S.force.lop;   // alleen voor de balanstest
   if(ks.length<=3&&tactic==='lokaas')tactic='concentratie';
   let corner=rand()<.5?'onder':'boven';
   if(boog&&tactic!=='lokaas')corner=boog==='onder'?'boven':'onder';
@@ -172,9 +174,23 @@ function goLopers(T){
    if(kn.some(e=>e.x>33.4))lr.vangnet++;
    if(P.smart&&P.tactic!=='lokaas'){const wk=wallWeak(T);if(wk&&wk.w>3){P.weak=wk.y;}}}
   const cy=P.corner==='onder'?20.8:4.2, stY=P.corner==='onder'?19.5:5.5;
-  if(P.tactic==='rennen'){ks.forEach(k=>{k.ai.role='charge';k.ai.tx=35.8;k.ai.ty=clamp(k.y+(rand()-.5)*10,1,24);});}
-  else if(P.tactic==='concentratie'||P.tactic==='schijn'){
-    ks.forEach((k,i)=>{const a=i/ks.length*Math.PI*2;k.ai.role='stage';k.ai.tx=22+Math.cos(a)*1.1;k.ai.ty=clamp(stY+Math.sin(a)*1.1,.8,24.2);});
+  if(P.tactic==='rennen'){   // zonder plan: elk kind kiest zelf een plek, verspreid over de hele breedte
+    if(P.breakout){   // uitbreken: samen door één plek in de kring, schuin weg van de meeste pakkers
+      const kn2=teamKnown(T),up=kn2.filter(e=>e.y<12.5).length<=kn2.filter(e=>e.y>=12.5).length,tY=up?3.5:21.5;
+      ks.forEach((k,i)=>{k.ai.role='charge';k.ai.wx=8.5;k.ai.tx=35.8;k.ai.ty=clamp(tY+((i%4)-1.5)*.8,.8,24.2);});
+    }else ks.forEach(k=>{k.ai.role='charge';k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=1+rand()*23;});}
+  else if(P.tactic==='concentratie'){
+    // één massa, tegelijk uit B, recht op één plek in de muur: het grootste gat dat de kapitein ziet, anders de gekozen plek
+    let tY=P.breachY;if(P.smart&&P.weak!=null)tY=P.weak;
+    P.phase='charge';P.cy=tY;
+    ks.forEach((k,i)=>{k.ai.role='charge';k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=clamp(tY+((i%5)-2)*.8,.8,24.2);});
+  }else if(P.tactic==='schijn'){
+    // schijnaanval: een derde trekt eerst naar één hoek, de massa breekt even later door aan de andere kant
+    const fast=ks.slice().sort((a,b)=>b.top-a.top),nF=Math.max(1,Math.round(ks.length/3));
+    fast.forEach((k,i)=>{
+      if(i<nF){const a=i/nF*Math.PI*2;k.ai.role='stage';k.ai.tx=24+Math.cos(a)*1.1;k.ai.ty=clamp(stY+Math.sin(a)*1.1,.8,24.2);}
+      else{k.ai.role='wacht';}
+    });
     P.phase='stage';P.cy=cy;
   }else{ // lokaas
     const sn=ks.slice().sort((a,b)=>b.top-a.top).slice(0,ks.length>=6?2:1);

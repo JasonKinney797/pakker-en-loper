@@ -2,7 +2,9 @@
 /* ---------- Constanten ---------- */
 const W=35,H=25,CX=35;
 const B={x0:0,y0:10,x1:5,y1:15};
-const GUARD=3, TAG_CD=.6, CONTACT=.6;
+const GUARD=3, CONTACT=.6;
+/* tijd tussen twee tikken van hetzelfde kind: alleen zijn reactietijd (twee lopers binnen bereik tik je vlak na elkaar) */
+function tagCd(p){return S.tagCd!=null?S.tagCd:p.react;}
 /* kans dat een pakker al aan de rand van zijn bereik grijpt, terwijl de loper nog dichterbij komt */
 const GRAB={slim:0,perfect:0,boven:.15,gem:.35,onder:.6,dom:1};
 const NAMES=['Lucas','Noah','Arthur','Louis','Liam','Jules','Adam','Victor','Finn','Mathis','Lars','Wout','Seppe','Vic','Mats','Warre','Leon','Rune','Kobe','Ruben','Ilias','Amir','Rayan','Jasper','Senne','Emma','Olivia','Louise','Mila','Elena','Nina','Lena','Ella','Fien','Lore','Hanne','Julie','Marie','Noor','Lotte','Febe','Amber','Jana','Zoë','Yasmine','Sara','Lina','Axelle'];
@@ -17,6 +19,9 @@ const LV={
   dom:    {nm:'dom',             scan:4.0,gap:3.5,best:0.00,brk:.40,lure:1.0,helpAt:99, helpP:0,  resp:.25,leash:5.0,danger:2.2,wait:8, margin:.2},
   perfect:{nm:'perfect',         scan:0.5,gap:1.2,best:1.00,brk:0,  lure:0,  helpAt:1.0,helpP:1.0,resp:1.0, leash:1.6,danger:3.5,wait:25,margin:1.0}
 };
+/* verstand bij het tikken: bonus voor de pakker, en hoeveel een loper nog ontwijkt */
+const IQ_TAG={slim:.03,perfect:.03,boven:.01,gem:0,onder:-.08,dom:-.16};
+const IQ_DODGE={slim:.07,perfect:.07,boven:.05,gem:.02,onder:0,dom:0};
 const LV_ROLL=[['slim',.25],['boven',.30],['gem',.25],['onder',.13],['dom',.07]];
 /* de andere ploeg is sterker: meer slimme kinderen, bijna geen domme */
 const LV_ROLL_CPU=[['slim',.42],['boven',.35],['gem',.17],['onder',.05],['dom',.01]];

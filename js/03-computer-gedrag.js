@@ -90,8 +90,10 @@ function waitB(k){
   go(k,s.x,s.y,'walk');k.look=0;
 }
 function stage(k){
-  if(evade(k,lv(k).danger))return;
-  go(k,k.ai.tx,k.ai.ty,'jog');k.look=0;
+  if(evade(k,lv(k).danger+1.5))return;
+  // dicht bij B of met een pakker in de buurt: sprinten, anders rustig naar de verzamelplek
+  const hot=k.x<16||known(k).some(e=>hyp(e.x-k.x,e.y-k.y)<8);
+  go(k,k.ai.tx,k.ai.ty,hot?'sprint':'jog');k.look=0;
 }
 function charge(k){
   const L=lv(k);
@@ -311,27 +313,41 @@ function captainT(T){
   }
   const lvn=cap.level,left=S.cd?S.cd.left:99;
   if(!P.go){
+    // omsingeld: staan bijna alle pakkers rond B, dan is het veld erachter leeg. Een kapitein die oplet breekt meteen uit, elk een andere kant op.
+    if(lvn!=='dom'&&lvn!=='onder'&&S.rt>1.5&&!S.cdDone){
+      const kn=teamKnown(T),nP=S.kids.filter(k=>k.team!==T&&k.status==='active').length;
+      // komen bijna alle pakkers op B af, dan meteen weg: nu is er nog ruimte, straks staat er een kring
+      const rush=kn.filter(e=>e.vx<-2.5&&e.x<30).length>=nP*.6,ring=kn.filter(e=>e.x<13).length>=nP*.6;
+      if(nP>=3&&(rush||ring)){P.tactic='rennen';P.breakout=true;S.ev.tac[T]+=' (alle pakkers komen: uitbreken)';goLopers(T);return;}
+    }
     let trig;
     if(lvn==='slim'||lvn==='boven')trig=left<=6||S.cdDone||S.rt>30;
     else if(lvn==='gem')trig=left<=3||S.cdDone||S.rt>40;
-    else trig=S.cdDone||S.rt>50;
+    else trig=(S.cd&&left<=8)||S.cdDone||S.rt>50;   // zonder plan: zodra er afgeteld wordt, rent iedereen
     if(trig)goLopers(T);
     return;
   }
   const ks=S.kids.filter(k=>k.team===T&&k.status==='active');
-  if((P.tactic==='concentratie'||P.tactic==='schijn')&&P.phase==='stage'){
+  if(P.tactic==='schijn'&&P.phase==='stage'){
+    // zodra de schijngroep onderweg is (of B onveilig wordt), breekt de massa uit B door aan de andere kant
     const st=ks.filter(k=>k.ai.role==='stage');
-    const near=st.filter(k=>hyp(k.x-k.ai.tx,k.y-k.ai.ty)<3).length;
-    const wait=P.tactic==='schijn'?4.5:5;
-    if(st.length===0||near>=st.length*.7||S.rt-P.goAt>wait+4){
+    const out=st.filter(k=>k.x>15).length;
+    if(st.length===0||out>=st.length*.6||S.cdDone||S.rt-P.goAt>4){
       P.phase='charge';
-      let tY=P.tactic==='schijn'?(P.corner==='onder'?4.2:20.8):P.cy;
-      if(P.smart){const wk=wallWeak(T);
-        if(P.tactic==='concentratie'&&wk&&wk.w>3)tY=wk.y;
-        else if(P.tactic==='schijn'&&wk){const want=P.corner==='onder'?'boven':'onder';if((want==='boven')===(wk.y<12.5))tY=wk.y;}}
-      if(P.tactic==='schijn')S.ev.tac[T]+=` (doorbraak gezocht bij ${zoneOf(tY)})`;
-      ks.forEach((k,i)=>{if(k.ai.role==='stage'){k.ai.role='charge';k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=clamp(tY+((i%5)-2)*.9,.8,24.2);}});
+      let tY=P.corner==='onder'?6:19;
+      if(P.smart){const wk=wallWeak(T);const want=P.corner==='onder'?'boven':'onder';if(wk&&(want==='boven')===(wk.y<12.5))tY=wk.y;}
+      S.ev.tac[T]+=` (doorbraak gezocht bij ${zoneOf(tY)})`;
+      ks.forEach((k,i)=>{if(k.ai.role==='wacht'){k.ai.role='charge';k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=clamp(tY+((i%5)-2)*.8,.8,24.2);}});
+      P.feintUntil=S.rt+2.5;
     }
+  }
+  if(P.tactic==='schijn'&&P.phase==='charge'&&P.feintUntil&&S.rt>=P.feintUntil){   // de schijngroep gaat nu zelf ook
+    P.feintUntil=0;const tY=P.cy;
+    ks.forEach((k,i)=>{if(k.ai.role==='stage'){k.ai.role='charge';k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=clamp(tY+((i%3)-1)*.9,.8,24.2);}});
+  }
+  if(P.tactic==='lokaas'&&!P.push&&S.rt-P.goAt>12){   // lokken heeft lang genoeg geduurd: iedereen die nog vrij is, gaat samen door
+    P.push=true;
+    ks.forEach((k,i)=>{if(k.x<33){k.ai.role='charge';k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=clamp(P.breachY+((i%5)-2)*.8,.8,24.2);}});
   }
 }
 function startCountdown(by){
