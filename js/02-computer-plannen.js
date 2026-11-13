@@ -142,13 +142,13 @@ function planLopers(cap,T){
   const boog=seen.length?seen[seen.length-1]:null;
   let tactic;
   if(lvn==='dom'||lvn==='onder')tactic='rennen';
-  else if(lvn==='gem')tactic='concentratie';
-  else if(lvn==='boven')tactic=rand()<.85?'concentratie':'lokaas';
-  else tactic=boog?wpick([['lokaas',.3],['concentratie',.4],['schijn',.3]]):wpick([['concentratie',.5],['schijn',.35],['lokaas',.15]]);
+  else if(lvn==='gem')tactic=rand()<.7?'concentratie':'groepen';
+  else if(lvn==='boven')tactic=wpick([['concentratie',.6],['groepen',.25],['lokaas',.15]]);
+  else tactic=boog?wpick([['lokaas',.3],['concentratie',.3],['schijn',.2],['groepen',.2]]):wpick([['concentratie',.4],['schijn',.25],['groepen',.25],['lokaas',.1]]);
   const lr=S.learn[T],tot=Object.values(lr.lop).reduce((a,s)=>a+s.n,0);
   if((lvn==='slim'||lvn==='boven')&&tot>=2){
     const wx=lr.wallX.length?35-lr.wallX.slice(-3).reduce((a,b)=>a+b,0)/Math.min(3,lr.wallX.length):3;
-    const cand={concentratie:(wx>5.5?.15:0),schijn:.02,lokaas:(boog?.12:0)+(lr.vangnet>=2?.06:0)};
+    const cand={concentratie:(wx>5.5?.15:0),schijn:.02,groepen:.02,lokaas:(boog?.12:0)+(lr.vangnet>=2?.06:0)};
     let bk=null,bs=-9,ex=lvn==='slim'?.25:.4;
     for(const [k,b] of Object.entries(cand)){const s=score(lr.lop,k,tot,ex)+b+(lvn==='boven'?(rand()-.5)*.2:0);if(s>bs){bs=s;bk=k;}}
     tactic=bk;
@@ -163,6 +163,7 @@ function planLopers(cap,T){
   S.plans[T]={side:'lopers',tactic,corner,breachY,go:false,goAt:0,phase:'wacht',smart:lvn==='slim'||lvn==='boven'};
   S.ev.tac[T]={rennen:'Iedereen rent naar C',concentratie:`Concentratie op de hoek ${corner}`,
     schijn:`Schijnaanval: eerst de hoek ${corner}, dan de andere kant`,
+    groepen:'Kleine groepjes, tegelijk op meerdere plekken',
     lokaas:`Lokaas op de muur bij ${zoneOf(breachY)}, sneakers wachten op een gat`}[tactic];
 }
 
@@ -178,12 +179,22 @@ function goLopers(T){
     if(P.breakout){   // uitbreken: samen door één plek in de kring, schuin weg van de meeste pakkers
       const kn2=teamKnown(T),up=kn2.filter(e=>e.y<12.5).length<=kn2.filter(e=>e.y>=12.5).length,tY=up?3.5:21.5;
       ks.forEach((k,i)=>{k.ai.role='charge';k.ai.wx=8.5;k.ai.tx=35.8;k.ai.ty=clamp(tY+((i%4)-1.5)*.8,.8,24.2);});
-    }else ks.forEach(k=>{k.ai.role='charge';k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=1+rand()*23;});}
+    }else ks.forEach(k=>{k.ai.goT=S.rt+rand()*6;k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=1+rand()*23;});}   // elk kind vertrekt wanneer het zelf durft
   else if(P.tactic==='concentratie'){
     // één massa, tegelijk uit B, recht op één plek in de muur: het grootste gat dat de kapitein ziet, anders de gekozen plek
     let tY=P.breachY;if(P.smart&&P.weak!=null)tY=P.weak;
     P.phase='charge';P.cy=tY;
     ks.forEach((k,i)=>{k.ai.role='charge';k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=clamp(tY+((i%5)-2)*.8,.8,24.2);});
+  }else if(P.tactic==='groepen'){
+    // kleine groepjes, tegelijk uit B, elk op een andere plek in de muur: de muur kan niet overal bijspringen
+    // groepjes van minstens vijf: kleiner en elk muurkind heeft maar één loper voor zich
+    const nG=ks.length>=15?3:ks.length>=6?2:1;
+    const ys=nG===3?[4,12.5,21]:nG===2?[5.5,19.5]:[P.breachY];
+    if(P.smart&&P.weak!=null){let bi=0;ys.forEach((y,i)=>{if(Math.abs(y-P.weak)<Math.abs(ys[bi]-P.weak))bi=i;});ys[bi]=P.weak;}
+    // snelle kinderen gelijk verdeeld over de groepjes; wie het dichtst bij een plek staat, krijgt die plek
+    const order=ks.slice().sort((a,b)=>b.top-a.top);
+    P.phase='charge';
+    order.forEach((k,i)=>{const g=i%nG;k.ai.role='charge';k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=clamp(ys[g]+((Math.floor(i/nG)%3)-1)*.8,.8,24.2);});
   }else if(P.tactic==='schijn'){
     // schijnaanval: een derde trekt eerst naar één hoek, de massa breekt even later door aan de andere kant
     const fast=ks.slice().sort((a,b)=>b.top-a.top),nF=Math.max(1,Math.round(ks.length/3));
