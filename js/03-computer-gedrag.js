@@ -92,7 +92,10 @@ function chargeTo(k,wx,gy){k.ai.role='charge';k.ai.wx=wx;k.ai.tx=35.8;k.ai.ty=gy
 const HZ={   // in = seconden in en uit, zij = seconden zijwaarts zoeken, terug = seconden achteraan voor een nieuwe poging
   slim:{in:3.2,zij:4.5,terug:5},boven:{in:2.8,zij:4,terug:6},gem:{in:2.4,zij:3.5,terug:8},onder:{in:2,zij:3,terug:10},dom:{in:1.5,zij:2.5,terug:12}};
 let HZ_COVER=.6,HZ_DEC=4.5,HZ_LOK=.005,HZ_OVER=1,HZ_HERD=4,HZ_IN=2.7,HZ_EV=1.2;   // afgesteld met honderden rondes computer tegen computer   // hoeveel een pakker zijwaarts nog kan dichtlopen (m), afstand tot de muur waarop een loper beslist (m)
-function hzOn(k){return isLoper(k)&&lv(k)!==LV.perfect&&!k.ai.bait&&activeRole(k)!=='lokaas'&&k.ai.role!=='decoy';}
+/* moed in de groep: wie met genoeg ploegmaats tegelijk aanvalt, twijfelt niet en gaat door */
+const HZ_MASS=2;
+function hzMates(k){let n=0;for(const o of S.kids)if(o!==k&&o.team===k.team&&o.status==='active'&&Math.abs(o.x-k.x)<4.5&&Math.abs(o.y-k.y)<4.5)n++;return n;}
+function hzOn(k){return isLoper(k)&&lv(k)!==LV.perfect&&!k.ai.bait&&activeRole(k)!=='lokaas'&&k.ai.role!=='decoy'&&hzMates(k)<HZ_MASS;}
 function hzCount(n){(S.hzc||(S.hzc={}))[n]=((S.hzc||{})[n]||0)+1;}
 /* de muur vóór mij: pakkers tussen mij en C */
 function hzWall(k){

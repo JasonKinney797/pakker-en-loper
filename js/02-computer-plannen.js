@@ -187,8 +187,9 @@ function goLopers(T){
     ks.forEach((k,i)=>{k.ai.role='charge';k.ai.wx=null;k.ai.tx=35.8;k.ai.ty=clamp(tY+((i%5)-2)*.8,.8,24.2);});
   }else if(P.tactic==='groepen'){
     // kleine groepjes, tegelijk uit B, elk op een andere plek in de muur: de muur kan niet overal bijspringen
-    const nG=ks.length>=9?3:ks.length>=4?2:1;
-    const ys=nG===3?[4,12.5,21]:nG===2?[6,19]:[P.breachY];
+    // groepjes van minstens vijf: kleiner en elk muurkind heeft maar één loper voor zich
+    const nG=ks.length>=15?3:ks.length>=6?2:1;
+    const ys=nG===3?[4,12.5,21]:nG===2?[5.5,19.5]:[P.breachY];
     if(P.smart&&P.weak!=null){let bi=0;ys.forEach((y,i)=>{if(Math.abs(y-P.weak)<Math.abs(ys[bi]-P.weak))bi=i;});ys[bi]=P.weak;}
     // snelle kinderen gelijk verdeeld over de groepjes; wie het dichtst bij een plek staat, krijgt die plek
     const order=ks.slice().sort((a,b)=>b.top-a.top);

@@ -67,7 +67,7 @@ function tagProb(p,l,d){
   if(p.tired||p.energy<.3)pr-=.10;
   // verstand: een slim kind tikt op het juiste moment, een dom kind grijpt mis; een slimme loper draait net op tijd weg
   // snelheid: een loper die harder gaat dan de pakker kan lopen, is moeilijker te grijpen
-  pr-=clamp((hyp(l.vx,l.vy)-p.top)*.14,-.1,.18);
+  pr-=clamp((hyp(l.vx,l.vy)-p.top)*.2,-.12,.22);
   pr+=IQ_TAG[lvKey(p)]-IQ_DODGE[lvKey(l)];
   return clamp(pr,.02,.97);
 }
